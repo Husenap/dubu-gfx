@@ -12,7 +12,7 @@ jobs:
     - name: Install Vulkan
       run: |
         curl https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe --output vulkan-sdk.exe
-        vulkan-sdk.exe /S
+        ./vulkan-sdk.exe /S
 
     - name: Generate
       run: cmake . -B.build -DCMAKE_BUILD_TYPE=Debug
