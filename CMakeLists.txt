@@ -16,8 +16,9 @@ option(${PROJECT_NAME}_BUILD_TESTS
     "If the ${PROJECT_NAME} tests are built in addition to the ${PROJECT_NAME} library."
     ON)
 
-find_package(Vulkan REQUIRED)
+#find_package(Vulkan REQUIRED)
 
+include("thirdparty/vulkan.cmake")
 add_subdirectory("dubu_vk")
 
 if(${${PROJECT_NAME}_BUILD_TESTS})
@@ -26,4 +27,8 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     include("thirdparty/googletest.cmake")
     include("thirdparty/dubu_window.cmake")
     add_subdirectory("dubu_vk_test")
+endif()
+
+if(TARGET uninstall)
+    set_target_properties("uninstall" PROPERTIES FOLDER "predefined")
 endif()

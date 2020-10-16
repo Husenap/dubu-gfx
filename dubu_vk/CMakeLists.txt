@@ -24,8 +24,9 @@ target_link_libraries(${target_name}
     compiler_warnings
     Vulkan::Vulkan)
 
-target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_precompile_headers(${target_name} PUBLIC ${src_precompiled})
+target_include_directories( ${target_name} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 source_group("src" FILES ${src_dubu_vk})
 source_group("src/vulkan" FILES ${src_vulkan})
