@@ -10,6 +10,11 @@ void Application::Run() {
 }
 
 void Application::InitVulkan() {
+	std::cout << "Vulkan header version: "
+	          << VK_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE) << "."
+	          << VK_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE) << "."
+	          << VK_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE) << std::endl;
+
 	std::cout << "Supported Extensions: " << std::endl;
 	for (auto& extension : vk::enumerateInstanceExtensionProperties()) {
 		std::cout << "\t" << extension.extensionName << ": "
@@ -19,8 +24,10 @@ void Application::InitVulkan() {
 	std::cout << "Supported Layers: " << std::endl;
 	for (auto& layer : vk::enumerateInstanceLayerProperties()) {
 		std::cout << "\t" << layer.layerName << "(" << layer.description
-		          << "): " << layer.implementationVersion << "."
-		          << layer.specVersion << std::endl;
+		          << "): " << VK_VERSION_MAJOR(layer.specVersion) << "."
+		          << VK_VERSION_MINOR(layer.specVersion) << "."
+		          << VK_VERSION_PATCH(layer.specVersion) << "."
+		          << layer.implementationVersion << std::endl;
 	}
 
 	vk::ApplicationInfo applicationInfo{
