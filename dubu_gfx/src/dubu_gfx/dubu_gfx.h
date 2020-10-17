@@ -1,3 +1,7 @@
 #pragma once
 
-#include "vulkan/Framework.h"
+#include <vulkan/vulkan.hpp>
+
+#include "vulkan/Device.h"
+#include "vulkan/Instance.h"
+#include "vulkan/Surface.h"

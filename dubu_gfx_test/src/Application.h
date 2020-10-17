@@ -8,10 +8,12 @@ public:
 	void Run();
 
 private:
-	void InitVulkan();
+	void InitFramework();
 	void MainLoop();
 
-	std::unique_ptr<dubu::window::IWindow> mWindow;
+	std::unique_ptr<dubu::window::GLFWWindow> mWindow;
 
-	std::unique_ptr<dubu::gfx::Framework> mFramework;
+	std::unique_ptr<dubu::gfx::Instance> mInstance;
+	std::unique_ptr<dubu::gfx::Surface>  mSurface;
+	std::unique_ptr<dubu::gfx::Device>   mDevice;
 };

@@ -3,11 +3,14 @@
 
 #include "Application.h"
 
-int main() {
+void Run() {
 	Application app;
+	app.Run();
+}
 
+int main() {
 	try {
-		app.Run();
+		Run();
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return 1;

@@ -12,3 +12,5 @@ target_link_libraries(${target_name}
     dubu_gfx)
 
 set_target_properties(${target_name} PROPERTIES FOLDER ${${PROJECT_NAME}_FOLDER}/test)
+
+target_compile_definitions(${target_name} PRIVATE GLFW_INCLUDE_VULKAN)

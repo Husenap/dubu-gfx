@@ -4,10 +4,14 @@ set(src_precompiled
     "src/dubu_gfx/precompiled.h")
 
 set(src_vulkan
+    "src/dubu_gfx/vulkan/Device.cpp"
+    "src/dubu_gfx/vulkan/Device.h"
+    "src/dubu_gfx/vulkan/Surface.cpp"
+    "src/dubu_gfx/vulkan/Surface.h"
+    "src/dubu_gfx/vulkan/Instance.cpp"
+    "src/dubu_gfx/vulkan/Instance.h"
     "src/dubu_gfx/vulkan/QueueFamilyIndices.cpp"
-    "src/dubu_gfx/vulkan/QueueFamilyIndices.h"
-    "src/dubu_gfx/vulkan/Framework.cpp"
-    "src/dubu_gfx/vulkan/Framework.h")
+    "src/dubu_gfx/vulkan/QueueFamilyIndices.h")
 
 set(src_dubu_gfx
     "src/dubu_gfx/dubu_gfx.h")

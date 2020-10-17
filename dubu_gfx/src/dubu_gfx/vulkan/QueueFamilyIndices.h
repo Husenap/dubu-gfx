@@ -2,7 +2,7 @@
 
 namespace dubu::gfx::internal {
 struct QueueFamilyIndices {
-	QueueFamilyIndices(::vk::PhysicalDevice device);
+	QueueFamilyIndices(vk::PhysicalDevice device);
 
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
