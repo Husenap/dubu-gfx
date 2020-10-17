@@ -16,15 +16,13 @@ option(${PROJECT_NAME}_BUILD_TESTS
     "If the ${PROJECT_NAME} tests are built in addition to the ${PROJECT_NAME} library."
     ON)
 
-#find_package(Vulkan REQUIRED)
-
 include("thirdparty/vulkan.cmake")
 add_subdirectory("dubu_vk")
 
 if(${${PROJECT_NAME}_BUILD_TESTS})
-    enable_testing()
-    include(GoogleTest)
-    include("thirdparty/googletest.cmake")
+    #enable_testing()
+    #include(GoogleTest)
+    #include("thirdparty/googletest.cmake")
     include("thirdparty/dubu_window.cmake")
     add_subdirectory("dubu_vk_test")
 endif()

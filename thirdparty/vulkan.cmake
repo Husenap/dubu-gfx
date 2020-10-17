@@ -1,26 +1,6 @@
-# Vulkan-Headers
-message("-- External Project: Vulkan-Headers")
-include(FetchContent)
-
-FetchContent_Declare(
-    vulkan_headers
-    GIT_REPOSITORY  https://github.com/KhronosGroup/Vulkan-Headers.git
-    GIT_TAG         v1.2.157
-)
-
-FetchContent_MakeAvailable(vulkan_headers)
-
-# Vulkan-Loader
-message("-- External Project: Vulkan-Loader")
-include(FetchContent)
-
-FetchContent_Declare(
-    vulkan_loader
-    GIT_REPOSITORY  https://github.com/KhronosGroup/Vulkan-Loader.git
-    GIT_TAG         v1.2.157
-)
-
-FetchContent_MakeAvailable(vulkan_loader)
+include("thirdparty/vulkan/glslang.cmake")
+include("thirdparty/vulkan/vulkan_headers.cmake")
+include("thirdparty/vulkan/vulkan_loader.cmake")
 
 if(MSVC)
     set_target_properties("asm_offset" PROPERTIES FOLDER "thirdparty/vulkan")

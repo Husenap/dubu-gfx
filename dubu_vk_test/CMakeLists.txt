@@ -1,6 +1,8 @@
 set(target_name "dubu_vk_test")
 
 set(src_files
+    "src/Application.cpp"
+    "src/Application.h"
     "src/main.cpp")
 
 add_executable(${target_name} ${src_files})

@@ -1,18 +1,17 @@
+#include <exception>
 #include <iostream>
 
-#define GLFW_INCLUDE_VULKAN
-
-#include <dubu_vk/dubu_vk.h>
-#include <dubu_window/dubu_window.h>
+#include "Application.h"
 
 int main() {
-	dubu::window::GLFWWindow window(600, 600, "dubu-vk");
+	Application app;
 
-	auto extensions = vk::enumerateInstanceExtensionProperties();
-
-	std::cout << extensions.size() << " extensions supported." << std::endl;
-
-	while (!window.ShouldClose()) {
-		window.PollEvents();
+	try {
+		app.Run();
+	} catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		return 1;
 	}
+
+	return 0;
 }
