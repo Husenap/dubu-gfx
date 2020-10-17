@@ -2,7 +2,10 @@
 
 #include <vulkan/vulkan.hpp>
 
-namespace dubu::vk {
+#include "QueueFamilyIndices.h"
+
+namespace dubu::gfx {
+
 struct FrameworkCreateInfo {
 	std::string              applicationName    = "application";
 	uint32_t                 applicationVersion = 0;
@@ -19,7 +22,15 @@ public:
 	Framework(const FrameworkCreateInfo& ci);
 
 private:
+	void CreateInstance();
+	void PickPhysicalDevice();
+	void CreateLogicalDevice();
+
+	FrameworkCreateInfo                mCreateInfo;
 	::vk::UniqueInstance               mInstance;
 	::vk::UniqueDebugUtilsMessengerEXT mDebugMessenger;
+	::vk::PhysicalDevice               mPhysicalDevice;
+	::vk::UniqueDevice                 mDevice;
+	::vk::Queue                        mGraphicsQueue;
 };
-}  // namespace dubu::vk
+}  // namespace dubu::gfx

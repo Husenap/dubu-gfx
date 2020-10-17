@@ -1,7 +1,7 @@
 #include "Application.h"
 
 void Application::Run() {
-	mWindow = std::make_unique<dubu::window::GLFWWindow>(600, 600, "dubu-vk");
+	mWindow = std::make_unique<dubu::window::GLFWWindow>(600, 600, "dubu-gfx");
 
 	InitVulkan();
 	MainLoop();
@@ -17,7 +17,7 @@ void Application::InitVulkan() {
 	}
 
 	mFramework =
-	    std::make_unique<dubu::vk::Framework>(dubu::vk::FrameworkCreateInfo{
+	    std::make_unique<dubu::gfx::Framework>(dubu::gfx::FrameworkCreateInfo{
 	        .applicationName    = "sample app",
 	        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
 	        .engineName         = "dubu-vk",
