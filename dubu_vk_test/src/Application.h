@@ -13,5 +13,5 @@ private:
 
 	std::unique_ptr<dubu::window::IWindow> mWindow;
 
-	vk::UniqueInstance mInstance;
+	std::unique_ptr<dubu::vk::Framework> mFramework;
 };
