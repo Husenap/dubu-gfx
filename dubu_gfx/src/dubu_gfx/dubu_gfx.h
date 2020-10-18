@@ -6,3 +6,4 @@
 #include "vulkan/Instance.h"
 #include "vulkan/Surface.h"
 #include "vulkan/Swapchain.h"
+#include "vulkan/ShaderModule.h"

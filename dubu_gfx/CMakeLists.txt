@@ -8,6 +8,8 @@ set(src_vulkan
     "src/dubu_gfx/vulkan/Device.h"
     "src/dubu_gfx/vulkan/Surface.cpp"
     "src/dubu_gfx/vulkan/Surface.h"
+    "src/dubu_gfx/vulkan/ShaderModule.cpp"
+    "src/dubu_gfx/vulkan/ShaderModule.h"
     "src/dubu_gfx/vulkan/Swapchain.cpp"
     "src/dubu_gfx/vulkan/Swapchain.h"
     "src/dubu_gfx/vulkan/Instance.cpp"

@@ -9,6 +9,9 @@ public:
 	          vk::SurfaceKHR     surface,
 	          vk::Extent2D       extent);
 
+	vk::Format          GetImageFormat() const { return mImageFormat; }
+	const vk::Extent2D& GetExtent() const { return mExtent; }
+
 private:
 	vk::SurfaceFormatKHR ChooseSurfaceFormat(
 	    const std::vector<vk::SurfaceFormatKHR>& formats) const;
