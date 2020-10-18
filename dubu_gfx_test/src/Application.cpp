@@ -27,10 +27,6 @@ void Application::InitFramework() {
 	        .engineName         = "dubu-vk",
 	        .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
 	        .requiredExtensions = requiredExtensions,
-#ifdef _DEBUG
-	        .optionalExtensions = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
-	        .optionalLayers     = {"VK_LAYER_KHRONOS_validation"},
-#endif
 	    });
 
 	VkSurfaceKHR surface;

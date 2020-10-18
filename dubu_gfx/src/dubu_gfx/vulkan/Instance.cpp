@@ -4,6 +4,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace dubu::gfx {
 
+#ifdef _DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
               VkDebugUtilsMessageTypeFlagsEXT,
@@ -16,6 +17,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 
 	return VK_FALSE;
 }
+#endif
 
 Instance::Instance(const CreateInfo& createInfo) {
 	vk::DynamicLoader dl;
@@ -77,6 +79,11 @@ Instance::Instance(const CreateInfo& createInfo) {
 		        });
 	    });
 
+#ifdef _DEBUG
+	requestedExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	requestedLayers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+
 	std::cout
 	    << "=================================================================="
 	    << std::endl;
@@ -89,6 +96,7 @@ Instance::Instance(const CreateInfo& createInfo) {
 		std::cout << "\t" << layer << std::endl;
 	}
 
+#ifdef _DEBUG
 	vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo{
 	    .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
 	                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
@@ -98,6 +106,7 @@ Instance::Instance(const CreateInfo& createInfo) {
 	                   vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 	    .pfnUserCallback = DebugCallback,
 	};
+#endif
 
 	vk::ApplicationInfo applicationInfo{
 	    .pApplicationName   = createInfo.applicationName,
@@ -108,7 +117,9 @@ Instance::Instance(const CreateInfo& createInfo) {
 	};
 
 	vk::InstanceCreateInfo instanceCreateInfo{
-	    .pNext               = &debugCreateInfo,
+#ifdef _DEBUG
+	    .pNext = &debugCreateInfo,
+#endif
 	    .pApplicationInfo    = &applicationInfo,
 	    .enabledLayerCount   = static_cast<uint32_t>(requestedLayers.size()),
 	    .ppEnabledLayerNames = requestedLayers.data(),
@@ -120,8 +131,10 @@ Instance::Instance(const CreateInfo& createInfo) {
 	mInstance = vk::createInstanceUnique(instanceCreateInfo);
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(mInstance.get());
 
+#ifdef _DEBUG
 	mDebugMessenger =
 	    mInstance->createDebugUtilsMessengerEXTUnique(debugCreateInfo);
+#endif
 }
 
 }  // namespace dubu::gfx

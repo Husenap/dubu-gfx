@@ -21,8 +21,11 @@ public:
 	vk::Instance GetInstance() const { return *mInstance; }
 
 private:
-	vk::UniqueInstance               mInstance;
+	vk::UniqueInstance mInstance;
+
+#ifdef _DEBUG
 	vk::UniqueDebugUtilsMessengerEXT mDebugMessenger;
+#endif
 };
 
 }  // namespace dubu::gfx
