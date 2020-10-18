@@ -67,19 +67,16 @@ void Application::InitFramework() {
 	    mSurface->GetSurface(),
 	    vk::Extent2D{.width = WIDTH, .height = HEIGHT});
 
-	dubu::gfx::ShaderModule vertexShaderModule(
-	    mDevice->GetDevice(),
-	    ReadFile("assets/shaders/shader.vert.spv"),
-	    vk::ShaderStageFlagBits::eVertex);
-	dubu::gfx::ShaderModule fragmentShaderModule(
-	    mDevice->GetDevice(),
-	    ReadFile("assets/shaders/shader.frag.spv"),
-	    vk::ShaderStageFlagBits::eFragment);
-
-	vk::PipelineShaderStageCreateInfo shaderStages[] = {
-	    vertexShaderModule.GetPipelineShaderStageCreateInfo(),
-	    fragmentShaderModule.GetPipelineShaderStageCreateInfo(),
-	};
+	dubu::gfx::Shader shader({
+	    .device = mDevice->GetDevice(),
+	    .shaderModules =
+	        {
+	            {ReadFile("assets/shaders/shader.vert.spv"),
+	             vk::ShaderStageFlagBits::eVertex},
+	            {ReadFile("assets/shaders/shader.frag.spv"),
+	             vk::ShaderStageFlagBits::eFragment},
+	        },
+	});
 
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
 	    .vertexBindingDescriptionCount   = 0,
@@ -91,26 +88,20 @@ void Application::InitFramework() {
 	    .primitiveRestartEnable = VK_FALSE,
 	};
 
-	vk::Viewport viewport{
-	    .x        = 0.f,
-	    .y        = 0.f,
-	    .width    = static_cast<float>(mSwapchain->GetExtent().width),
-	    .height   = static_cast<float>(mSwapchain->GetExtent().height),
-	    .minDepth = 0.f,
-	    .maxDepth = 1.f,
-	};
-
-	vk::Rect2D scissor{
-	    .offset = {.x = 0, .y = 0},
-	    .extent = mSwapchain->GetExtent(),
-	};
-
-	vk::PipelineViewportStateCreateInfo viewportStateInfo{
-	    .viewportCount = 1,
-	    .pViewports    = &viewport,
-	    .scissorCount  = 1,
-	    .pScissors     = &scissor,
-	};
+	dubu::gfx::ViewportState viewportState({
+	    .viewports = {{
+	        .x        = 0.f,
+	        .y        = 0.f,
+	        .width    = static_cast<float>(mSwapchain->GetExtent().width),
+	        .height   = static_cast<float>(mSwapchain->GetExtent().height),
+	        .minDepth = 0.f,
+	        .maxDepth = 1.f,
+	    }},
+	    .scissors  = {{
+            .offset = {.x = 0, .y = 0},
+            .extent = mSwapchain->GetExtent(),
+        }},
+	});
 
 	vk::PipelineRasterizationStateCreateInfo rasterizerInfo{
 	    .depthClampEnable        = VK_FALSE,
@@ -140,45 +131,42 @@ void Application::InitFramework() {
 	    .pAttachments    = &colorBlendAttachement,
 	};
 
-	vk::DynamicState dynamicStates[] = {vk::DynamicState::eViewport,
-	                                    vk::DynamicState::eLineWidth};
-
-	vk::PipelineDynamicStateCreateInfo dynamicStateInfo{
-	    .dynamicStateCount = 2,
-	    .pDynamicStates    = dynamicStates,
-	};
+	dubu::gfx::DynamicState dynamicState(
+	    {vk::DynamicState::eViewport, vk::DynamicState::eLineWidth});
 
 	vk::UniquePipelineLayout pipelineLayout =
 	    mDevice->GetDevice().createPipelineLayoutUnique({});
 
-	vk::AttachmentDescription colorAttachment{
-	    .format         = mSwapchain->GetImageFormat(),
-	    .samples        = vk::SampleCountFlagBits::e1,
-	    .loadOp         = vk::AttachmentLoadOp::eClear,
-	    .storeOp        = vk::AttachmentStoreOp::eStore,
-	    .stencilLoadOp  = vk::AttachmentLoadOp::eDontCare,
-	    .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
-	    .initialLayout  = vk::ImageLayout::eUndefined,
-	    .finalLayout    = vk::ImageLayout::ePresentSrcKHR,
-	};
+	dubu::gfx::RenderPass renderPass({
+	    .device      = mDevice->GetDevice(),
+	    .attachments = {{
+	        .format          = mSwapchain->GetImageFormat(),
+	        .samples         = vk::SampleCountFlagBits::e1,
+	        .loadOp          = vk::AttachmentLoadOp::eClear,
+	        .storeOp         = vk::AttachmentStoreOp::eStore,
+	        .stencilLoadOp   = vk::AttachmentLoadOp::eDontCare,
+	        .stencilStoreOp  = vk::AttachmentStoreOp::eDontCare,
+	        .initialLayout   = vk::ImageLayout::eUndefined,
+	        .finalLayout     = vk::ImageLayout::ePresentSrcKHR,
+	        .referenceLayout = vk::ImageLayout::eColorAttachmentOptimal,
+	    }},
+	    .subpasses   = {{vk::PipelineBindPoint::eGraphics, {0}}},
+	});
 
-	vk::AttachmentReference colorAttachmentReference{
-	    .attachment = 0,
-	    .layout     = vk::ImageLayout::eColorAttachmentOptimal,
-	};
-
-	vk::SubpassDescription subpassDescription{
-	    .pipelineBindPoint    = vk::PipelineBindPoint::eGraphics,
-	    .colorAttachmentCount = 1,
-	    .pColorAttachments    = &colorAttachmentReference,
-	};
-
-	vk::UniqueRenderPass renderPass =
-	    mDevice->GetDevice().createRenderPassUnique(vk::RenderPassCreateInfo{
-	        .attachmentCount = 1,
-	        .pAttachments    = &colorAttachment,
-	        .subpassCount    = 1,
-	        .pSubpasses      = &subpassDescription,
+	mGraphicsPipeline = std::make_unique<dubu::gfx::GraphicsPipeline>(
+	    dubu::gfx::GraphicsPipeline::CreateInfo{
+	        .device             = mDevice->GetDevice(),
+	        .shaderStages       = shader.GetShaderStages(),
+	        .vertexInputState   = vertexInputInfo,
+	        .inputAssemblyState = inputAssemblyInfo,
+	        .viewportState      = viewportState.GetViewportState(),
+	        .rasterizationState = rasterizerInfo,
+	        .multisampleState   = multisampleInfo,
+	        .colorBlendState    = colorBlendInfo,
+	        .dynamicState       = dynamicState.GetDynamicState(),
+	        .pipelineLayout     = *pipelineLayout,
+	        .renderPass         = renderPass.GetRenderPass(),
+	        .subpass            = 0,
 	    });
 }
 

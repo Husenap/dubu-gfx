@@ -10,7 +10,7 @@ public:
 	             const blob&             byteCode,
 	             vk::ShaderStageFlagBits shaderStage);
 
-	vk::PipelineShaderStageCreateInfo GetPipelineShaderStageCreateInfo();
+	vk::PipelineShaderStageCreateInfo GetPipelineShaderStageCreateInfo() const;
 
 private:
 	vk::ShaderStageFlagBits mShaderStage;

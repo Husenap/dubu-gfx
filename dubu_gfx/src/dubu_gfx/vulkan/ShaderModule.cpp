@@ -13,7 +13,7 @@ ShaderModule::ShaderModule(vk::Device              device,
 }
 
 vk::PipelineShaderStageCreateInfo
-ShaderModule::GetPipelineShaderStageCreateInfo() {
+ShaderModule::GetPipelineShaderStageCreateInfo() const {
 	return vk::PipelineShaderStageCreateInfo{
 	    .stage  = mShaderStage,
 	    .module = *mShaderModule,

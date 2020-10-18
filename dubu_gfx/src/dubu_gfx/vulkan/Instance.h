@@ -6,13 +6,13 @@ class Instance {
 public:
 	struct CreateInfo {
 		const char*              applicationName    = "application";
-		uint32_t                 applicationVersion = 0;
+		uint32_t                 applicationVersion = {};
 		const char*              engineName         = "engine";
-		uint32_t                 engineVersion      = 0;
-		std::vector<const char*> requiredExtensions;
-		std::vector<const char*> optionalExtensions;
-		std::vector<const char*> requiredLayers;
-		std::vector<const char*> optionalLayers;
+		uint32_t                 engineVersion      = {};
+		std::vector<const char*> requiredExtensions = {};
+		std::vector<const char*> optionalExtensions = {};
+		std::vector<const char*> requiredLayers     = {};
+		std::vector<const char*> optionalLayers     = {};
 	};
 
 public:
