@@ -1,7 +1,11 @@
 #include "Application.h"
 
+constexpr uint32_t WIDTH  = 600;
+constexpr uint32_t HEIGHT = 600;
+
 void Application::Run() {
-	mWindow = std::make_unique<dubu::window::GLFWWindow>(600, 600, "dubu-gfx");
+	mWindow =
+	    std::make_unique<dubu::window::GLFWWindow>(WIDTH, HEIGHT, "dubu-gfx");
 
 	InitFramework();
 	MainLoop();
@@ -30,7 +34,7 @@ void Application::InitFramework() {
 	    });
 
 	VkSurfaceKHR surface;
-	if (glfwCreateWindowSurface(*mInstance->GetInstance(),
+	if (glfwCreateWindowSurface(mInstance->GetInstance(),
 	                            mWindow->GetGLFWHandle(),
 	                            nullptr,
 	                            &surface) != VK_SUCCESS) {
@@ -38,9 +42,16 @@ void Application::InitFramework() {
 	}
 
 	mSurface = std::make_unique<dubu::gfx::Surface>(
-	    vk::UniqueSurfaceKHR(surface, *mInstance->GetInstance()));
+	    vk::UniqueSurfaceKHR(surface, mInstance->GetInstance()));
 
-	mDevice = std::make_unique<dubu::gfx::Device>(*mInstance);
+	mDevice = std::make_unique<dubu::gfx::Device>(mInstance->GetInstance(),
+	                                              mSurface->GetSurface());
+
+	mSwapchain = std::make_unique<dubu::gfx::Swapchain>(
+	    mDevice->GetDevice(),
+	    mDevice->GetPhysicalDevice(),
+	    mSurface->GetSurface(),
+	    vk::Extent2D{.width = WIDTH, .height = HEIGHT});
 }
 
 void Application::MainLoop() {

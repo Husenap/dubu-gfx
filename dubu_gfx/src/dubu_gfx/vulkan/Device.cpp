@@ -4,14 +4,18 @@
 
 namespace dubu::gfx {
 
-Device::Device(Instance& instance) {
-	PickPhysicalDevice(instance);
-	CreateLogicalDevice();
+namespace DeviceInternal {
+const std::vector<const char*> RequiredExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 }
 
-void Device::PickPhysicalDevice(Instance& instance) {
-	const auto AvailableDevices =
-	    instance.GetInstance()->enumeratePhysicalDevices();
+Device::Device(vk::Instance instance, vk::SurfaceKHR surface) {
+	PickPhysicalDevice(instance, surface);
+	CreateLogicalDevice(surface);
+}
+
+void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
+	const auto AvailableDevices = instance.enumeratePhysicalDevices();
 
 	std::cout << "Available Physical Devices:" << std::endl;
 	for (auto& device : AvailableDevices) {
@@ -31,12 +35,12 @@ void Device::PickPhysicalDevice(Instance& instance) {
 
 	std::multimap<int, vk::PhysicalDevice> candidates;
 
-	const auto ScoreCalculation = [](const vk::PhysicalDevice& device) {
+	const auto ScoreCalculation = [surface](const vk::PhysicalDevice& device) {
 		int score = 0;
 
 		const auto                   properties = device.getProperties();
 		const auto                   features   = device.getFeatures();
-		internal::QueueFamilyIndices queueFamilies(device);
+		internal::QueueFamilyIndices queueFamilies(device, surface);
 
 		if (!queueFamilies.IsComplete()) {
 			return 0;
@@ -52,6 +56,17 @@ void Device::PickPhysicalDevice(Instance& instance) {
 
 		score += properties.limits.maxImageDimension2D;
 
+		std::set<std::string> deviceExtensions(
+		    std::begin(DeviceInternal::RequiredExtensions),
+		    std::end(DeviceInternal::RequiredExtensions));
+		for (auto& extension : device.enumerateDeviceExtensionProperties()) {
+			deviceExtensions.erase(extension.extensionName);
+		}
+
+		if (!deviceExtensions.empty()) {
+			return 0;
+		}
+
 		return score;
 	};
 
@@ -62,30 +77,38 @@ void Device::PickPhysicalDevice(Instance& instance) {
 	mPhysicalDevice = candidates.rbegin()->second;
 }
 
-void Device::CreateLogicalDevice() {
-	internal::QueueFamilyIndices queueFamilies(mPhysicalDevice);
+void Device::CreateLogicalDevice(vk::SurfaceKHR surface) {
+	internal::QueueFamilyIndices queueFamilies(mPhysicalDevice, surface);
+
+	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+	std::set<uint32_t> uniqueQueueFamilies = {*queueFamilies.graphicsFamily,
+	                                          *queueFamilies.presentFamily};
 
 	float queuePriority = 1.0f;
-
-	vk::DeviceQueueCreateInfo queueCreateInfo{
-	    .queueFamilyIndex = *queueFamilies.graphicsFamily,
-	    .queueCount       = 1,
-	    .pQueuePriorities = &queuePriority,
-	};
+	for (uint32_t queueFamily : uniqueQueueFamilies) {
+		queueCreateInfos.push_back(vk::DeviceQueueCreateInfo{
+		    .queueFamilyIndex = queueFamily,
+		    .queueCount       = 1,
+		    .pQueuePriorities = &queuePriority,
+		});
+	}
 
 	vk::PhysicalDeviceFeatures deviceFeatures{};
 
 	vk::DeviceCreateInfo deviceCreateInfo{
-	    .queueCreateInfoCount  = 1,
-	    .pQueueCreateInfos     = &queueCreateInfo,
-	    .enabledLayerCount     = 0,
-	    .enabledExtensionCount = 0,
-	    .pEnabledFeatures      = &deviceFeatures,
+	    .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
+	    .pQueueCreateInfos    = queueCreateInfos.data(),
+	    .enabledLayerCount    = 0,
+	    .enabledExtensionCount =
+	        static_cast<uint32_t>(DeviceInternal::RequiredExtensions.size()),
+	    .ppEnabledExtensionNames = DeviceInternal::RequiredExtensions.data(),
+	    .pEnabledFeatures        = &deviceFeatures,
 	};
 
 	mDevice = mPhysicalDevice.createDeviceUnique(deviceCreateInfo);
 
 	mGraphicsQueue = mDevice->getQueue(*queueFamilies.graphicsFamily, 0);
+	mPresentQueue  = mDevice->getQueue(*queueFamilies.presentFamily, 0);
 }
 
 }  // namespace dubu::gfx
