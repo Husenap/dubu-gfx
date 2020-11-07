@@ -41,11 +41,21 @@ RenderPass::RenderPass(const CreateInfo& ci) {
 		});
 	}
 
+	vk::SubpassDependency dependency{
+	    .srcSubpass    = VK_SUBPASS_EXTERNAL,
+	    .dstSubpass    = 0,
+	    .srcStageMask  = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+	    .dstStageMask  = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+	    .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+	};
+
 	mRenderPass = ci.device.createRenderPassUnique(vk::RenderPassCreateInfo{
 	    .attachmentCount = static_cast<uint32_t>(attachments.size()),
 	    .pAttachments    = attachments.data(),
 	    .subpassCount    = static_cast<uint32_t>(subpasses.size()),
 	    .pSubpasses      = subpasses.data(),
+	    .dependencyCount = 1,
+	    .pDependencies   = &dependency,
 	});
 }
 

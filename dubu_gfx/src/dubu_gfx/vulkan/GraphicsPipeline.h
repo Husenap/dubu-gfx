@@ -48,6 +48,8 @@ public:
 		                .value;
 	}
 
+	vk::Pipeline GetPipeline() const { return *mPipeline; }
+
 private:
 	vk::UniquePipeline mPipeline;
 };

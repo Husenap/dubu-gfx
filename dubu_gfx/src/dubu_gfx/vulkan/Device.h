@@ -8,8 +8,13 @@ class Device {
 public:
 	Device(vk::Instance instance, vk::SurfaceKHR surface);
 
-	vk::PhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
-	vk::Device         GetDevice() const { return *mDevice; }
+	const vk::PhysicalDevice& GetPhysicalDevice() const {
+		return mPhysicalDevice;
+	}
+	const vk::Device& GetDevice() const { return *mDevice; }
+
+	const vk::Queue& GetGraphicsQueue() const { return mGraphicsQueue; }
+	const vk::Queue& GetPresentQueue() const { return mPresentQueue; }
 
 private:
 	void PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface);
@@ -20,7 +25,6 @@ private:
 
 	vk::Queue mGraphicsQueue;
 	vk::Queue mPresentQueue;
-
 };
 
 }  // namespace dubu::gfx

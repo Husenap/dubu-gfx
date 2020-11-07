@@ -3,11 +3,11 @@
 #include "QueueFamilyIndices.h"
 
 namespace dubu::gfx {
-Swapchain::Swapchain(vk::Device         device,
-                     vk::PhysicalDevice physicalDevice,
-                     vk::SurfaceKHR     surface,
-                     vk::Extent2D       extent) {
-	CreateSwapchain(device, physicalDevice, surface, extent);
+Swapchain::Swapchain(const CreateInfo& createInfo) {
+	CreateSwapchain(createInfo.device,
+	                createInfo.physicalDevice,
+	                createInfo.surface,
+	                createInfo.extent);
 }
 
 vk::SurfaceFormatKHR Swapchain::ChooseSurfaceFormat(
@@ -97,12 +97,12 @@ void Swapchain::CreateSwapchain(vk::Device         device,
 	    .oldSwapchain          = nullptr,
 	});
 
-	mSwapchainImages = device.getSwapchainImagesKHR(*mSwapchain);
+	mImages = device.getSwapchainImagesKHR(*mSwapchain);
 
-	for (std::size_t i = 0; i < mSwapchainImages.size(); ++i) {
-		mSwapchainImageViews.push_back(
+	for (std::size_t i = 0; i < mImages.size(); ++i) {
+		mUniqueImageViews.push_back(
 		    device.createImageViewUnique(vk::ImageViewCreateInfo{
-		        .image    = mSwapchainImages[i],
+		        .image    = mImages[i],
 		        .viewType = vk::ImageViewType::e2D,
 		        .format   = mImageFormat,
 		        .components =
@@ -121,6 +121,7 @@ void Swapchain::CreateSwapchain(vk::Device         device,
 		                .layerCount     = 1,
 		            },
 		    }));
+		mImageViews.push_back(*mUniqueImageViews[i]);
 	}
 }
 }  // namespace dubu::gfx

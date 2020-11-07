@@ -4,13 +4,20 @@ namespace dubu::gfx {
 
 class Swapchain {
 public:
-	Swapchain(vk::Device         device,
-	          vk::PhysicalDevice physicalDevice,
-	          vk::SurfaceKHR     surface,
-	          vk::Extent2D       extent);
+	struct CreateInfo {
+		vk::Device         device         = {};
+		vk::PhysicalDevice physicalDevice = {};
+		vk::SurfaceKHR     surface        = {};
+		vk::Extent2D       extent         = {};
+	};
 
-	vk::Format          GetImageFormat() const { return mImageFormat; }
-	const vk::Extent2D& GetExtent() const { return mExtent; }
+public:
+	Swapchain(const CreateInfo& createInfo);
+
+	vk::Format                 GetImageFormat() const { return mImageFormat; }
+	const vk::Extent2D&        GetExtent() const { return mExtent; }
+	std::vector<vk::ImageView> GetImageViews() const { return mImageViews; }
+	const vk::SwapchainKHR&    GetSwapchain() const { return *mSwapchain; }
 
 private:
 	vk::SurfaceFormatKHR ChooseSurfaceFormat(
@@ -29,8 +36,9 @@ private:
 	vk::Extent2D mExtent;
 
 	vk::UniqueSwapchainKHR           mSwapchain;
-	std::vector<vk::Image>           mSwapchainImages;
-	std::vector<vk::UniqueImageView> mSwapchainImageViews;
+	std::vector<vk::Image>           mImages;
+	std::vector<vk::UniqueImageView> mUniqueImageViews;
+	std::vector<vk::ImageView>       mImageViews;
 };
 
 }  // namespace dubu::gfx
