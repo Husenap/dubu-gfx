@@ -8,8 +8,8 @@
 #include <dubu_gfx/vulkan/QueueFamilyIndices.h>
 #include <imgui.h>
 
-constexpr uint32_t WIDTH                = 600;
-constexpr uint32_t HEIGHT               = 600;
+constexpr uint32_t WIDTH                = 1600;
+constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
 
 dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
@@ -105,6 +105,9 @@ void Application::InitImGui() {
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+	io.ConfigViewportsNoAutoMerge  = true;
+	io.ConfigViewportsNoDecoration = false;
 
 	ImGui::StyleColorsDark();
 
