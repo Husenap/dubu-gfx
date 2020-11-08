@@ -8,6 +8,8 @@ set(src_vulkan
     "src/dubu_gfx/vulkan/CommandBuffer.h"
     "src/dubu_gfx/vulkan/CommandPool.cpp"
     "src/dubu_gfx/vulkan/CommandPool.h"
+    "src/dubu_gfx/vulkan/DescriptorPool.cpp"
+    "src/dubu_gfx/vulkan/DescriptorPool.h"
     "src/dubu_gfx/vulkan/Device.cpp"
     "src/dubu_gfx/vulkan/Device.h"
     "src/dubu_gfx/vulkan/DrawingCommand.cpp"
@@ -51,6 +53,7 @@ set_target_properties(${target_name} PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(${target_name}
     compiler_features
     compiler_warnings
+    dubu_log
     Vulkan::Vulkan)
 
 target_precompile_headers(${target_name} PUBLIC ${src_precompiled})

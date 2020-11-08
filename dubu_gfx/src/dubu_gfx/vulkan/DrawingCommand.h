@@ -4,7 +4,8 @@
 
 namespace dubu::gfx {
 
-using DrawingCommand = std::variant<DrawingCommands::BeginRenderPass,
+using DrawingCommand = std::variant<DrawingCommands::Custom,
+                                    DrawingCommands::BeginRenderPass,
                                     DrawingCommands::EndRenderPass,
                                     DrawingCommands::BindPipeline,
                                     DrawingCommands::SetViewport,
@@ -14,8 +15,8 @@ namespace internal {
 
 class DrawingCommandVisitor {
 public:
-	DrawingCommandVisitor(vk::CommandBuffer& commandBuffer,
-	                      std::size_t        commandBufferIndex)
+	DrawingCommandVisitor(const vk::CommandBuffer& commandBuffer,
+	                      std::size_t              commandBufferIndex)
 	    : mCommandBuffer(commandBuffer)
 	    , mCommandBufferIndex(commandBufferIndex) {}
 
@@ -23,6 +24,7 @@ public:
 		throw std::runtime_error("DrawingCommand Type Missing Implementation!");
 	}
 
+	void operator()(const DrawingCommands::Custom& cmd);
 	void operator()(const DrawingCommands::BeginRenderPass& cmd);
 	void operator()(const DrawingCommands::EndRenderPass& cmd);
 	void operator()(const DrawingCommands::BindPipeline& cmd);
@@ -30,8 +32,8 @@ public:
 	void operator()(const DrawingCommands::Draw& cmd);
 
 private:
-	vk::CommandBuffer& mCommandBuffer;
-	std::size_t        mCommandBufferIndex;
+	const vk::CommandBuffer& mCommandBuffer;
+	std::size_t              mCommandBufferIndex;
 };
 
 }  // namespace internal

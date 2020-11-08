@@ -2,6 +2,11 @@
 
 namespace dubu::gfx::DrawingCommands {
 
+struct Custom {
+	std::function<void(const vk::CommandBuffer&, std::size_t)> customFunction =
+	    {};
+};
+
 struct BeginRenderPass {
 	vk::RenderPass               renderPass   = {};
 	std::vector<vk::Framebuffer> framebuffers = {};

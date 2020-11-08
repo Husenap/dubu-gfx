@@ -11,8 +11,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
               const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
               void*) {
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-		std::cerr << "Validation Layer: " << callbackData->pMessage
-		          << std::endl;
+		DUBU_LOG_ERROR("Validation Layer: {}", callbackData->pMessage);
 	}
 
 	return VK_FALSE;
@@ -28,24 +27,26 @@ Instance::Instance(const CreateInfo& createInfo) {
 	const auto AvailableExtensions = vk::enumerateInstanceExtensionProperties();
 	const auto AvailableLayers     = vk::enumerateInstanceLayerProperties();
 
-	std::cout << "Vulkan header version: "
-	          << VK_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE) << "."
-	          << VK_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE) << "."
-	          << VK_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE) << std::endl;
+	DUBU_LOG_INFO("Vulkan header version: {}.{}.{}",
+	              VK_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE),
+	              VK_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE),
+	              VK_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE));
 
-	std::cout << "Supported Extensions: " << std::endl;
+	DUBU_LOG_INFO("Supported Extensions:");
 	for (auto& extension : AvailableExtensions) {
-		std::cout << "\t" << extension.extensionName << ": "
-		          << extension.specVersion << std::endl;
+		DUBU_LOG_INFO(
+		    "\t{}: {}", extension.extensionName, extension.specVersion);
 	}
 
-	std::cout << "Supported Layers: " << std::endl;
+	DUBU_LOG_INFO("Supported Layers: ");
 	for (auto& layer : AvailableLayers) {
-		std::cout << "\t" << layer.layerName << "(" << layer.description
-		          << "): " << VK_VERSION_MAJOR(layer.specVersion) << "."
-		          << VK_VERSION_MINOR(layer.specVersion) << "."
-		          << VK_VERSION_PATCH(layer.specVersion) << "."
-		          << layer.implementationVersion << std::endl;
+		DUBU_LOG_INFO("\t{}({}): {}.{}.{}.{}",
+		              layer.layerName,
+		              layer.description,
+		              VK_VERSION_MAJOR(layer.specVersion),
+		              VK_VERSION_MINOR(layer.specVersion),
+		              VK_VERSION_PATCH(layer.specVersion),
+		              layer.implementationVersion);
 	}
 
 	std::vector<const char*> requestedExtensions =
@@ -84,16 +85,15 @@ Instance::Instance(const CreateInfo& createInfo) {
 	requestedLayers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
 
-	std::cout
-	    << "=================================================================="
-	    << std::endl;
-	std::cout << "Requested Extensions: " << std::endl;
+	DUBU_LOG_INFO(
+	    "==================================================================");
+	DUBU_LOG_INFO("Requested Extensions: ");
 	for (auto& extension : requestedExtensions) {
-		std::cout << "\t" << extension << std::endl;
+		DUBU_LOG_INFO("\t{}", extension);
 	}
-	std::cout << "Requested Layers: " << std::endl;
+	DUBU_LOG_INFO("Requested Layers: ");
 	for (auto& layer : requestedLayers) {
-		std::cout << "\t" << layer << std::endl;
+		DUBU_LOG_INFO("\t{}", layer);
 	}
 
 #ifdef _DEBUG

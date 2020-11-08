@@ -12,17 +12,24 @@ CommandBuffer::CommandBuffer(const CreateInfo& createInfo) {
 }
 
 void CommandBuffer::RecordCommands(
+    std::size_t                        bufferIndex,
+    const std::vector<DrawingCommand>& drawingCommands) {
+	mCommandBuffers[bufferIndex]->begin(vk::CommandBufferBeginInfo{});
+
+	internal::DrawingCommandVisitor visitor(*mCommandBuffers[bufferIndex],
+	                                        bufferIndex);
+
+	for (const auto& drawingCommand : drawingCommands) {
+		std::visit(visitor, drawingCommand);
+	}
+
+	mCommandBuffers[bufferIndex]->end();
+}
+
+void CommandBuffer::RecordCommandsForAllBuffers(
     const std::vector<DrawingCommand>& drawingCommands) {
 	for (std::size_t i = 0; i < mCommandBuffers.size(); ++i) {
-		mCommandBuffers[i]->begin(vk::CommandBufferBeginInfo{});
-
-		internal::DrawingCommandVisitor visitor(*mCommandBuffers[i], i);
-
-		for (const auto& drawingCommand : drawingCommands) {
-			std::visit(visitor, drawingCommand);
-		}
-
-		mCommandBuffers[i]->end();
+		RecordCommands(i, drawingCommands);
 	}
 }
 

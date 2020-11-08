@@ -1,5 +1,4 @@
 #include <exception>
-#include <iostream>
 
 #include "Application.h"
 
@@ -9,7 +8,9 @@ void Run() {
 }
 
 int main() {
-		Run();
+	dubu::log::Register<dubu::log::ConsoleLogger>();
+
+	Run();
 
 	return 0;
 }

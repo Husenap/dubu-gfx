@@ -17,6 +17,7 @@ option(${PROJECT_NAME}_BUILD_TESTS
     ON)
 
 include("thirdparty/vulkan.cmake")
+include("thirdparty/dubu_log.cmake")
 add_subdirectory("dubu_gfx")
 
 if(${${PROJECT_NAME}_BUILD_TESTS})
@@ -24,6 +25,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     #include(GoogleTest)
     #include("thirdparty/googletest.cmake")
     include("thirdparty/dubu_window.cmake")
+    include("thirdparty/imgui.cmake")
     add_subdirectory("dubu_gfx_test")
 endif()
 

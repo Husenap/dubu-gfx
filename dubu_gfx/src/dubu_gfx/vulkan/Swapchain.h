@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QueueFamilyIndices.h"
+
 namespace dubu::gfx {
 
 class Swapchain {
@@ -8,6 +10,7 @@ public:
 		vk::Device         device         = {};
 		vk::PhysicalDevice physicalDevice = {};
 		vk::SurfaceKHR     surface        = {};
+		QueueFamilyIndices queueFamilies  = {};
 		vk::Extent2D       extent         = {};
 	};
 
@@ -30,6 +33,7 @@ private:
 	void CreateSwapchain(vk::Device         device,
 	                     vk::PhysicalDevice physicalDevice,
 	                     vk::SurfaceKHR     surface,
+	                     QueueFamilyIndices queueFamilies,
 	                     vk::Extent2D       extent);
 
 	vk::Format   mImageFormat;

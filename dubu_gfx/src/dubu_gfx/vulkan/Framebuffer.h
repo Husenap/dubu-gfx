@@ -11,15 +11,15 @@ public:
 		vk::Extent2D               extent     = {};
 	};
 
+public:
+	Framebuffer(const CreateInfo& createInfo);
+
 	uint32_t GetFramebufferCount() const {
 		return static_cast<uint32_t>(mUniqueFramebuffers.size());
 	}
 	const std::vector<vk::Framebuffer>& GetFramebuffers() const {
 		return mFramebuffers;
 	}
-
-public:
-	Framebuffer(const CreateInfo& createInfo);
 
 private:
 	std::vector<vk::UniqueFramebuffer> mUniqueFramebuffers;

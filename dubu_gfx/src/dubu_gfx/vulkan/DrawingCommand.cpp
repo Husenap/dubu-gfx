@@ -2,6 +2,10 @@
 
 namespace dubu::gfx::internal {
 
+void DrawingCommandVisitor::operator()(const DrawingCommands::Custom& cmd) {
+	cmd.customFunction(mCommandBuffer, mCommandBufferIndex);
+}
+
 void DrawingCommandVisitor::operator()(
     const DrawingCommands::BeginRenderPass& cmd) {
 	mCommandBuffer.beginRenderPass(

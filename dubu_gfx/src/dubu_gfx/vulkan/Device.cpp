@@ -1,7 +1,5 @@
 #include "Device.h"
 
-#include "QueueFamilyIndices.h"
-
 namespace dubu::gfx {
 
 namespace DeviceInternal {
@@ -11,26 +9,26 @@ const std::vector<const char*> RequiredExtensions = {
 
 Device::Device(vk::Instance instance, vk::SurfaceKHR surface) {
 	PickPhysicalDevice(instance, surface);
-	CreateLogicalDevice(surface);
+	CreateLogicalDevice();
 }
 
 void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
 	const auto AvailableDevices = instance.enumeratePhysicalDevices();
 
-	std::cout << "Available Physical Devices:" << std::endl;
+	DUBU_LOG_INFO("Available Physical Devices:");
 	for (auto& device : AvailableDevices) {
 		auto properties = device.getProperties();
 
-		std::cout << "\t"
-		          << "[" << vk::to_string(properties.deviceType) << "]"
-		          << properties.deviceName
-		          << ": apiVersion:" << VK_VERSION_MAJOR(properties.apiVersion)
-		          << "." << VK_VERSION_MINOR(properties.apiVersion) << "."
-		          << VK_VERSION_PATCH(properties.apiVersion) << std::endl;
+		DUBU_LOG_INFO("\t[{}]{}: apiVersion:{}.{}.{}",
+		              vk::to_string(properties.deviceType),
+		              properties.deviceName,
+		              VK_VERSION_MAJOR(properties.apiVersion),
+		              VK_VERSION_MINOR(properties.apiVersion),
+		              VK_VERSION_PATCH(properties.apiVersion));
 	}
 
 	if (AvailableDevices.empty()) {
-		throw std::runtime_error("Couldn't find any physical devices!");
+		DUBU_LOG_FATAL("Couldn't find any physical devices!");
 	}
 
 	std::multimap<uint32_t, vk::PhysicalDevice> candidates;
@@ -38,9 +36,9 @@ void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
 	const auto ScoreCalculation = [surface](const vk::PhysicalDevice& device) {
 		uint32_t score = 0;
 
-		const auto                   properties = device.getProperties();
-		const auto                   features   = device.getFeatures();
-		internal::QueueFamilyIndices queueFamilies(device, surface);
+		const auto         properties = device.getProperties();
+		const auto         features   = device.getFeatures();
+		QueueFamilyIndices queueFamilies(device, surface);
 
 		if (!queueFamilies.IsComplete()) {
 			return 0u;
@@ -75,14 +73,14 @@ void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
 	}
 
 	mPhysicalDevice = candidates.rbegin()->second;
+
+	mQueueFamilies = QueueFamilyIndices(mPhysicalDevice, surface);
 }
 
-void Device::CreateLogicalDevice(vk::SurfaceKHR surface) {
-	internal::QueueFamilyIndices queueFamilies(mPhysicalDevice, surface);
-
+void Device::CreateLogicalDevice() {
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = {*queueFamilies.graphicsFamily,
-	                                          *queueFamilies.presentFamily};
+	std::set<uint32_t> uniqueQueueFamilies = {*mQueueFamilies.graphicsFamily,
+	                                          *mQueueFamilies.presentFamily};
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -107,8 +105,8 @@ void Device::CreateLogicalDevice(vk::SurfaceKHR surface) {
 
 	mDevice = mPhysicalDevice.createDeviceUnique(deviceCreateInfo);
 
-	mGraphicsQueue = mDevice->getQueue(*queueFamilies.graphicsFamily, 0);
-	mPresentQueue  = mDevice->getQueue(*queueFamilies.presentFamily, 0);
+	mGraphicsQueue = mDevice->getQueue(*mQueueFamilies.graphicsFamily, 0);
+	mPresentQueue  = mDevice->getQueue(*mQueueFamilies.presentFamily, 0);
 }
 
 }  // namespace dubu::gfx
