@@ -3,10 +3,10 @@
 #include <filesystem>
 #include <fstream>
 
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
 #include <dubu_gfx/vulkan/QueueFamilyIndices.h>
-#include <imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#include <imgui/imgui.h>
 
 constexpr uint32_t WIDTH                = 1600;
 constexpr uint32_t HEIGHT               = 900;
@@ -34,6 +34,13 @@ void Application::Run() {
 	Subscribe<dubu::window::EventResize>(
 	    [&](const auto& e) { mIsMinimized = (e.width == 0 || e.height == 0); },
 	    *mWindow);
+	Subscribe<dubu::window::EventKeyPress>(
+	    [&](const auto& e) {
+		    if (e.key == dubu::window::Key::KeyGraveAccent) {
+			    mShowDemoWindow = !mShowDemoWindow;
+		    }
+	    },
+	    *mWindow);
 
 	InitFramework();
 	InitImGui();
@@ -46,6 +53,16 @@ void Application::MainLoop() {
 
 		if (!mIsMinimized) {
 			DrawFrame();
+		} else {
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+			Update();
+			ImGui::Render();
+			if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+				ImGui::UpdatePlatformWindows();
+				ImGui::RenderPlatformWindowsDefault();
+			}
 		}
 	}
 
@@ -54,6 +71,12 @@ void Application::MainLoop() {
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+}
+
+void Application::Update() {
+	if (mShowDemoWindow) {
+		ImGui::ShowDemoWindow(&mShowDemoWindow);
+	}
 }
 
 void Application::InitFramework() {
@@ -260,7 +283,7 @@ void Application::DrawFrame() {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-	ImGui::ShowDemoWindow();
+	Update();
 	ImGui::Render();
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 		ImGui::UpdatePlatformWindows();

@@ -9,6 +9,9 @@ public:
 
 private:
 	void MainLoop();
+
+	void Update();
+
 	void InitFramework();
 	void InitImGui();
 	void RecreateSwapchain();
@@ -47,4 +50,5 @@ private:
 	bool                                         mIsMinimized = false;
 
 	std::unique_ptr<dubu::gfx::DescriptorPool> mImGuiDescriptorPool = {};
+	bool                                       mShowDemoWindow      = true;
 };
