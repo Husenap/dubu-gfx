@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <fstream>
 
-#define GLFW_INCLUDE_NONE
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <dubu_gfx/vulkan/QueueFamilyIndices.h>

@@ -33,6 +33,7 @@ if(NOT imgui_POPULATED)
 
     target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 
+    target_compile_definitions(imgui PRIVATE -DGLFW_INCLUDE_NONE)
     target_link_libraries(imgui Vulkan::Vulkan glfw)
 
     set_target_properties(imgui PROPERTIES FOLDER "thirdparty/imgui")
