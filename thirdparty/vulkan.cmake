@@ -1,0 +1,13 @@
+include("thirdparty/vulkan/glslang.cmake")
+include("thirdparty/vulkan/vulkan_headers.cmake")
+include("thirdparty/vulkan/vulkan_loader.cmake")
+
+if(MSVC)
+    set_target_properties("asm_offset" PROPERTIES FOLDER "thirdparty/vulkan")
+    set_target_properties("loader-norm" PROPERTIES FOLDER "thirdparty/vulkan")
+    set_target_properties("loader-opt" PROPERTIES FOLDER "thirdparty/vulkan")
+    set_target_properties("loader-unknown-chain" PROPERTIES FOLDER "thirdparty/vulkan")
+    set_target_properties("vulkan" PROPERTIES FOLDER "thirdparty/vulkan")
+    set_target_properties("VulkanLoader_generated_source" PROPERTIES FOLDER "thirdparty/vulkan")
+    set_target_properties("loader_asm_gen_files" PROPERTIES FOLDER "thirdparty/vulkan")
+endif()
