@@ -3,6 +3,11 @@
 #include <filesystem>
 #include <fstream>
 
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <dubu_gfx/vulkan/QueueFamilyIndices.h>
+#include <imgui.h>
+
 constexpr uint32_t WIDTH                = 600;
 constexpr uint32_t HEIGHT               = 600;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
@@ -31,6 +36,7 @@ void Application::Run() {
 	    *mWindow);
 
 	InitFramework();
+	InitImGui();
 	MainLoop();
 }
 
@@ -44,6 +50,10 @@ void Application::MainLoop() {
 	}
 
 	mDevice->GetDevice().waitIdle();
+
+	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 }
 
 void Application::InitFramework() {
@@ -57,6 +67,158 @@ void Application::InitFramework() {
 	CreateCommandPool();
 	CreateCommandBuffer();
 	CreateSyncObjects();
+}
+
+static void CheckVkResult(VkResult err) {
+	if (err == 0) {
+		return;
+	}
+	std::cerr << "[vulkan] Error: VkResult = " << err << std::endl;
+	if (err < 0) {
+		abort();
+	}
+}
+
+void Application::InitImGui() {
+	std::vector<vk::DescriptorPoolSize> poolSizes = {
+	    {vk::DescriptorType::eSampler, 1000},
+	    {vk::DescriptorType::eCombinedImageSampler, 1000},
+	    {vk::DescriptorType::eSampledImage, 1000},
+	    {vk::DescriptorType::eStorageImage, 1000},
+	    {vk::DescriptorType::eUniformTexelBuffer, 1000},
+	    {vk::DescriptorType::eStorageTexelBuffer, 1000},
+	    {vk::DescriptorType::eUniformBuffer, 1000},
+	    {vk::DescriptorType::eStorageBuffer, 1000},
+	    {vk::DescriptorType::eUniformBufferDynamic, 1000},
+	    {vk::DescriptorType::eStorageBufferDynamic, 1000},
+	    {vk::DescriptorType::eInputAttachment, 1000},
+	};
+	mImGuiDescriptorPool = std::make_unique<dubu::gfx::DescriptorPool>(
+	    dubu::gfx::DescriptorPool::CreateInfo{
+	        .device    = mDevice->GetDevice(),
+	        .poolSizes = poolSizes,
+	        .maxSets   = 1000 * static_cast<uint32_t>(poolSizes.size()) * 1000,
+	    });
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+	ImGui::StyleColorsDark();
+
+	ImGuiStyle& style = ImGui::GetStyle();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		style.WindowRounding              = 0.0f;
+		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+	}
+
+	ImGui_ImplGlfw_InitForVulkan(mWindow->GetGLFWHandle(), true);
+	ImGui_ImplVulkan_InitInfo initInfo{
+	    .Instance        = mInstance->GetInstance(),
+	    .PhysicalDevice  = mDevice->GetPhysicalDevice(),
+	    .Device          = mDevice->GetDevice(),
+	    .QueueFamily     = *mDevice->GetQueueFamilies().graphicsFamily,
+	    .Queue           = mDevice->GetGraphicsQueue(),
+	    .PipelineCache   = VK_NULL_HANDLE,
+	    .DescriptorPool  = mImGuiDescriptorPool->GetDescriptorPool(),
+	    .MinImageCount   = mFramebuffer->GetFramebufferCount(),
+	    .ImageCount      = mFramebuffer->GetFramebufferCount(),
+	    .CheckVkResultFn = CheckVkResult,
+	};
+	ImGui_ImplVulkan_Init(&initInfo, mRenderPass->GetRenderPass());
+
+	{
+		dubu::gfx::CommandPool commandPool(dubu::gfx::CommandPool::CreateInfo{
+		    .device        = mDevice->GetDevice(),
+		    .queueFamilies = mDevice->GetQueueFamilies(),
+		});
+
+		dubu::gfx::CommandBuffer commandBuffer(
+		    dubu::gfx::CommandBuffer::CreateInfo{
+		        .device      = mDevice->GetDevice(),
+		        .commandPool = commandPool.GetCommandPool(),
+		        .bufferCount = 1,
+		    });
+
+		commandBuffer.GetCommandBuffer(0).begin(vk::CommandBufferBeginInfo{
+		    .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+		});
+
+		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer.GetCommandBuffer(0));
+
+		commandBuffer.GetCommandBuffer(0).end();
+
+		mDevice->GetGraphicsQueue().submit(vk::SubmitInfo{
+		    .commandBufferCount = 1,
+		    .pCommandBuffers    = &commandBuffer.GetCommandBuffer(0),
+		});
+
+		mDevice->GetDevice().waitIdle();
+
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
+	}
+}
+
+void Application::RecreateSwapchain() {
+	if (mIsMinimized) {
+		return;
+	}
+
+	mDevice->GetDevice().waitIdle();
+
+	mCommandBuffer.reset();
+	mFramebuffer.reset();
+	mGraphicsPipeline.reset();
+	mRenderPass.reset();
+	mSwapchain.reset();
+
+	CreateSwapchain();
+	CreateRenderPass();
+	CreateGraphicsPipeline();
+	CreateFramebuffer();
+	CreateCommandBuffer();
+
+	ImGui_ImplVulkan_SetMinImageCount(mFramebuffer->GetFramebufferCount());
+}
+
+void Application::RecordCommands(uint32_t imageIndex) {
+	mCommandBuffer->RecordCommands(
+	    static_cast<std::size_t>(imageIndex),
+	    {
+	        dubu::gfx::DrawingCommands::BeginRenderPass{
+	            .renderPass   = mRenderPass->GetRenderPass(),
+	            .framebuffers = mFramebuffer->GetFramebuffers(),
+	            .renderArea   = {.offset = {0, 0},
+                               .extent = mSwapchain->GetExtent()},
+	            .clearColor   = vk::ClearColorValue(
+                    std::array<float, 4>{0.f, 0.f, 0.f, 1.f}),
+	        },
+
+	        dubu::gfx::DrawingCommands::BindPipeline{
+	            .pipeline  = mGraphicsPipeline->GetPipeline(),
+	            .bindPoint = vk::PipelineBindPoint::eGraphics,
+	        },
+
+	        dubu::gfx::DrawingCommands::SetViewport{
+	            .viewports = mViewportState->GetViewports(),
+	        },
+
+	        dubu::gfx::DrawingCommands::Draw{
+	            .vertexCount   = 3,
+	            .instanceCount = 1,
+	        },
+
+	        dubu::gfx::DrawingCommands::Custom{
+	            .customFunction =
+	                [](const vk::CommandBuffer& commandBuffer, std::size_t) {
+		                ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
+		                                                commandBuffer);
+	                }},
+
+	        dubu::gfx::DrawingCommands::EndRenderPass{},
+	    });
 }
 
 void Application::DrawFrame() {
@@ -90,8 +252,19 @@ void Application::DrawFrame() {
 			throw std::runtime_error("Failed to wait for fences!");
 		}
 	}
-
 	mImagesInFlight[imageIndex] = *mInFlightFences[mCurrentFrame];
+
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+	ImGui::ShowDemoWindow();
+	ImGui::Render();
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
+
+	RecordCommands(imageIndex);
 
 	vk::Semaphore waitSemaphores[] = {
 	    *mImageAvailableSemaphores[mCurrentFrame]};
@@ -101,7 +274,6 @@ void Application::DrawFrame() {
 	    *mRenderFinishedSemaphores[mCurrentFrame]};
 
 	mDevice->GetDevice().resetFences(*mInFlightFences[mCurrentFrame]);
-
 	mDevice->GetGraphicsQueue().submit(
 	    vk::SubmitInfo{
 	        .waitSemaphoreCount = 1,
@@ -133,26 +305,6 @@ void Application::DrawFrame() {
 	}
 
 	mCurrentFrame = (mCurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-}
-
-void Application::RecreateSwapchain() {
-	if (mIsMinimized) {
-		return;
-	}
-
-	mDevice->GetDevice().waitIdle();
-
-	mCommandBuffer.reset();
-	mFramebuffer.reset();
-	mGraphicsPipeline.reset();
-	mRenderPass.reset();
-	mSwapchain.reset();
-
-	CreateSwapchain();
-	CreateRenderPass();
-	CreateGraphicsPipeline();
-	CreateFramebuffer();
-	CreateCommandBuffer();
 }
 
 void Application::CreateInstance() {
@@ -323,9 +475,8 @@ void Application::CreateFramebuffer() {
 void Application::CreateCommandPool() {
 	mCommandPool = std::make_unique<dubu::gfx::CommandPool>(
 	    dubu::gfx::CommandPool::CreateInfo{
-	        .device         = mDevice->GetDevice(),
-	        .physicalDevice = mDevice->GetPhysicalDevice(),
-	        .surface        = mSurface->GetSurface(),
+	        .device        = mDevice->GetDevice(),
+	        .queueFamilies = mDevice->GetQueueFamilies(),
 	    });
 }
 
@@ -336,32 +487,6 @@ void Application::CreateCommandBuffer() {
 	        .commandPool = mCommandPool->GetCommandPool(),
 	        .bufferCount = mFramebuffer->GetFramebufferCount(),
 	    });
-
-	mCommandBuffer->RecordCommands({
-	    dubu::gfx::DrawingCommands::BeginRenderPass{
-	        .renderPass   = mRenderPass->GetRenderPass(),
-	        .framebuffers = mFramebuffer->GetFramebuffers(),
-	        .renderArea = {.offset = {0, 0}, .extent = mSwapchain->GetExtent()},
-	        .clearColor =
-	            vk::ClearColorValue(std::array<float, 4>{0.f, 0.f, 0.f, 1.f}),
-	    },
-
-	    dubu::gfx::DrawingCommands::BindPipeline{
-	        .pipeline  = mGraphicsPipeline->GetPipeline(),
-	        .bindPoint = vk::PipelineBindPoint::eGraphics,
-	    },
-
-	    dubu::gfx::DrawingCommands::SetViewport{
-	        .viewports = mViewportState->GetViewports(),
-	    },
-
-	    dubu::gfx::DrawingCommands::Draw{
-	        .vertexCount   = 3,
-	        .instanceCount = 1,
-	    },
-
-	    dubu::gfx::DrawingCommands::EndRenderPass{},
-	});
 }
 
 void Application::CreateSyncObjects() {

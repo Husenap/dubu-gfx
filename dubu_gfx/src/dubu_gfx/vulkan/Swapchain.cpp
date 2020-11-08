@@ -1,19 +1,18 @@
 #include "Swapchain.h"
 
-#include "QueueFamilyIndices.h"
-
 namespace dubu::gfx {
 Swapchain::Swapchain(const CreateInfo& createInfo) {
 	CreateSwapchain(createInfo.device,
 	                createInfo.physicalDevice,
 	                createInfo.surface,
+	                createInfo.queueFamilies,
 	                createInfo.extent);
 }
 
 vk::SurfaceFormatKHR Swapchain::ChooseSurfaceFormat(
     const std::vector<vk::SurfaceFormatKHR>& formats) const {
 	for (auto format : formats) {
-		if (format.format == vk::Format::eB8G8R8A8Srgb &&
+		if (format.format == vk::Format::eB8G8R8A8Unorm &&
 		    format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
 			return format;
 		}
@@ -53,6 +52,7 @@ vk::Extent2D Swapchain::ChooseExtent(
 void Swapchain::CreateSwapchain(vk::Device         device,
                                 vk::PhysicalDevice physicalDevice,
                                 vk::SurfaceKHR     surface,
+                                QueueFamilyIndices queueFamilies,
                                 vk::Extent2D       extent) {
 	const auto Capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
 	const auto PresentMode =
@@ -62,8 +62,6 @@ void Swapchain::CreateSwapchain(vk::Device         device,
 
 	mImageFormat = Format.format;
 	mExtent      = ChooseExtent(Capabilities, extent);
-
-	internal::QueueFamilyIndices queueFamilies(physicalDevice, surface);
 
 	uint32_t imageCount = Capabilities.minImageCount + 1;
 	if (Capabilities.maxImageCount > 0) {

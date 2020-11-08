@@ -8,6 +8,8 @@ set(src_vulkan
     "src/dubu_gfx/vulkan/CommandBuffer.h"
     "src/dubu_gfx/vulkan/CommandPool.cpp"
     "src/dubu_gfx/vulkan/CommandPool.h"
+    "src/dubu_gfx/vulkan/DescriptorPool.cpp"
+    "src/dubu_gfx/vulkan/DescriptorPool.h"
     "src/dubu_gfx/vulkan/Device.cpp"
     "src/dubu_gfx/vulkan/Device.h"
     "src/dubu_gfx/vulkan/DrawingCommand.cpp"

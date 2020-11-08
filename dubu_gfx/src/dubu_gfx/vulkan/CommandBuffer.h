@@ -15,7 +15,11 @@ public:
 public:
 	CommandBuffer(const CreateInfo& createInfo);
 
-	void RecordCommands(const std::vector<DrawingCommand>& drawingCommands);
+	void RecordCommands(std::size_t                        bufferIndex,
+	                    const std::vector<DrawingCommand>& drawingCommands);
+	void RecordCommandsForAllBuffers(
+	    const std::vector<DrawingCommand>& drawingCommands);
+
 	const vk::CommandBuffer& GetCommandBuffer(std::size_t index) const {
 		return *mCommandBuffers[index];
 	}

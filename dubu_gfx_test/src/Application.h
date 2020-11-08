@@ -10,8 +10,11 @@ public:
 private:
 	void MainLoop();
 	void InitFramework();
-	void DrawFrame();
+	void InitImGui();
 	void RecreateSwapchain();
+
+	void RecordCommands(uint32_t imageIndex);
+	void DrawFrame();
 
 	void CreateInstance();
 	void CreateSurface();
@@ -42,4 +45,6 @@ private:
 	std::vector<vk::Fence>                       mImagesInFlight           = {};
 	std::size_t                                  mCurrentFrame             = {};
 	bool                                         mIsMinimized = false;
+
+	std::unique_ptr<dubu::gfx::DescriptorPool> mImGuiDescriptorPool = {};
 };

@@ -4,6 +4,7 @@
 
 #include "vulkan/CommandBuffer.h"
 #include "vulkan/CommandPool.h"
+#include "vulkan/DescriptorPool.h"
 #include "vulkan/Device.h"
 #include "vulkan/DrawingCommand.h"
 #include "vulkan/DrawingCommands.h"

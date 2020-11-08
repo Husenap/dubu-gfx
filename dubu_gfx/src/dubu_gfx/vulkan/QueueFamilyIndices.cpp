@@ -1,9 +1,6 @@
 #include "QueueFamilyIndices.h"
 
-#include "Device.h"
-#include "Surface.h"
-
-namespace dubu::gfx::internal {
+namespace dubu::gfx {
 
 QueueFamilyIndices::QueueFamilyIndices(vk::PhysicalDevice physicalDevice,
                                        vk::SurfaceKHR     surface) {
@@ -25,4 +22,4 @@ QueueFamilyIndices::QueueFamilyIndices(vk::PhysicalDevice physicalDevice,
 	}
 }
 
-}  // namespace dubu::gfx::internal
+}  // namespace dubu::gfx
