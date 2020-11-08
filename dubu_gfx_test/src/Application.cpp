@@ -35,21 +35,7 @@ void Application::Run() {
 }
 
 void Application::MainLoop() {
-	static double previousTime = glfwGetTime();
-	static int    currentFrame = 0;
-
 	while (!mWindow->ShouldClose()) {
-		double currentTime = glfwGetTime();
-		double deltaTime   = currentTime - previousTime;
-		previousTime       = currentTime;
-
-		mFPS = 0.995 * mFPS + 0.05 * (1.0 / deltaTime);
-
-		if (++currentFrame % 10000 == 0) {
-			glfwSetWindowTitle(mWindow->GetGLFWHandle(),
-			                   std::to_string(mFPS).c_str());
-		}
-
 		mWindow->PollEvents();
 
 		if (!mIsMinimized) {
@@ -383,7 +369,7 @@ void Application::CreateSyncObjects() {
 	mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 	mImagesInFlight.resize(mSwapchain->GetImageViews().size());
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+	for (std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		mRenderFinishedSemaphores[i] =
 		    mDevice->GetDevice().createSemaphoreUnique({});
 		mImageAvailableSemaphores[i] =

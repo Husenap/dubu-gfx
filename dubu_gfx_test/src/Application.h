@@ -42,6 +42,4 @@ private:
 	std::vector<vk::Fence>                       mImagesInFlight           = {};
 	std::size_t                                  mCurrentFrame             = {};
 	bool                                         mIsMinimized = false;
-
-	double mFPS;
 };
