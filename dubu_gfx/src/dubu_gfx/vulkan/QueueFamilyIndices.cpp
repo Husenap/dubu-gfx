@@ -7,7 +7,7 @@ namespace dubu::gfx::internal {
 
 QueueFamilyIndices::QueueFamilyIndices(vk::PhysicalDevice physicalDevice,
                                        vk::SurfaceKHR     surface) {
-	int i = 0;
+	uint32_t i = 0;
 	for (const auto& queueFamily : physicalDevice.getQueueFamilyProperties()) {
 		if (IsComplete()) {
 			break;

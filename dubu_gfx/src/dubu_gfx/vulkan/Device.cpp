@@ -33,10 +33,10 @@ void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
 		throw std::runtime_error("Couldn't find any physical devices!");
 	}
 
-	std::multimap<int, vk::PhysicalDevice> candidates;
+	std::multimap<uint32_t, vk::PhysicalDevice> candidates;
 
 	const auto ScoreCalculation = [surface](const vk::PhysicalDevice& device) {
-		int score = 0;
+		uint32_t score = 0;
 
 		const auto                   properties = device.getProperties();
 		const auto                   features   = device.getFeatures();
