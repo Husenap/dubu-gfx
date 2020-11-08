@@ -43,11 +43,11 @@ void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
 		internal::QueueFamilyIndices queueFamilies(device, surface);
 
 		if (!queueFamilies.IsComplete()) {
-			return 0;
+			return 0u;
 		}
 
 		if (!features.geometryShader) {
-			return 0;
+			return 0u;
 		}
 
 		if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
@@ -64,7 +64,7 @@ void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
 		}
 
 		if (!deviceExtensions.empty()) {
-			return 0;
+			return 0u;
 		}
 
 		return score;
