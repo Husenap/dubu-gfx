@@ -257,7 +257,7 @@ void Application::DrawFrame() {
 	        *mInFlightFences[mCurrentFrame],
 	        VK_TRUE,
 	        std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to wait for fences!");
+		DUBU_LOG_FATAL("Failed to wait for fences!");
 	}
 
 	auto nextImageResult = mDevice->GetDevice().acquireNextImageKHR(
@@ -270,7 +270,7 @@ void Application::DrawFrame() {
 		return;
 	} else if (nextImageResult.result != vk::Result::eSuccess ||
 	           nextImageResult.result == vk::Result::eSuboptimalKHR) {
-		throw std::runtime_error("Failed to acquire swap chain image!");
+		DUBU_LOG_FATAL("Failed to acquire swap chain image!");
 	}
 
 	uint32_t imageIndex = nextImageResult.value;
@@ -280,7 +280,7 @@ void Application::DrawFrame() {
 		        mImagesInFlight[imageIndex],
 		        VK_TRUE,
 		        std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess) {
-			throw std::runtime_error("Failed to wait for fences!");
+			DUBU_LOG_FATAL("Failed to wait for fences!");
 		}
 	}
 	mImagesInFlight[imageIndex] = *mInFlightFences[mCurrentFrame];
@@ -363,7 +363,7 @@ void Application::CreateSurface() {
 	                            mWindow->GetGLFWHandle(),
 	                            nullptr,
 	                            &surface) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to created Surface!");
+		DUBU_LOG_FATAL("Failed to created Surface!");
 	}
 
 	mSurface = std::make_unique<dubu::gfx::Surface>(
