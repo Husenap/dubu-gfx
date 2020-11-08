@@ -17,7 +17,7 @@ dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
 	dubu::gfx::blob data(static_cast<std::size_t>(file.tellg()));
 
 	file.seekg(0);
-	file.read(data.data(), data.size());
+	file.read(data.data(), static_cast<std::streamsize>(data.size()));
 
 	return data;
 }
@@ -96,7 +96,7 @@ void Application::DrawFrame() {
 
 	uint32_t imageIndex = nextImageResult.value;
 
-	if (mImagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+	if (mImagesInFlight[imageIndex]) {
 		if (mDevice->GetDevice().waitForFences(
 		        mImagesInFlight[imageIndex],
 		        VK_TRUE,
