@@ -15,20 +15,20 @@ Device::Device(vk::Instance instance, vk::SurfaceKHR surface) {
 void Device::PickPhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface) {
 	const auto AvailableDevices = instance.enumeratePhysicalDevices();
 
-	std::cout << "Available Physical Devices:" << std::endl;
+	DUBU_LOG_INFO("Available Physical Devices:");
 	for (auto& device : AvailableDevices) {
 		auto properties = device.getProperties();
 
-		std::cout << "\t"
-		          << "[" << vk::to_string(properties.deviceType) << "]"
-		          << properties.deviceName
-		          << ": apiVersion:" << VK_VERSION_MAJOR(properties.apiVersion)
-		          << "." << VK_VERSION_MINOR(properties.apiVersion) << "."
-		          << VK_VERSION_PATCH(properties.apiVersion) << std::endl;
+		DUBU_LOG_INFO("\t[{}]{}: apiVersion:{}.{}.{}",
+		              vk::to_string(properties.deviceType),
+		              properties.deviceName,
+		              VK_VERSION_MAJOR(properties.apiVersion),
+		              VK_VERSION_MINOR(properties.apiVersion),
+		              VK_VERSION_PATCH(properties.apiVersion));
 	}
 
 	if (AvailableDevices.empty()) {
-		throw std::runtime_error("Couldn't find any physical devices!");
+		DUBU_LOG_FATAL("Couldn't find any physical devices!");
 	}
 
 	std::multimap<uint32_t, vk::PhysicalDevice> candidates;

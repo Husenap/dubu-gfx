@@ -53,6 +53,7 @@ set_target_properties(${target_name} PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(${target_name}
     compiler_features
     compiler_warnings
+    dubu_log
     Vulkan::Vulkan)
 
 target_precompile_headers(${target_name} PUBLIC ${src_precompiled})

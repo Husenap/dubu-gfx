@@ -42,8 +42,11 @@ void Application::Run() {
 	    },
 	    *mWindow);
 
+	double time0 = glfwGetTime();
 	InitFramework();
 	InitImGui();
+	double time1 = glfwGetTime();
+	DUBU_LOG_INFO("Initialization took {:.4f}ms", (time1 - time0) * 1000.0);
 	MainLoop();
 }
 
@@ -96,31 +99,33 @@ static void CheckVkResult(VkResult err) {
 	if (err == 0) {
 		return;
 	}
-	std::cerr << "[vulkan] Error: VkResult = " << err << std::endl;
+	DUBU_LOG_ERROR("[vulkan] Error: VkResult = {}", err);
 	if (err < 0) {
 		abort();
 	}
 }
 
 void Application::InitImGui() {
+	const uint32_t commonPoolSize = 1000;
+
 	std::vector<vk::DescriptorPoolSize> poolSizes = {
-	    {vk::DescriptorType::eSampler, 1000},
-	    {vk::DescriptorType::eCombinedImageSampler, 1000},
-	    {vk::DescriptorType::eSampledImage, 1000},
-	    {vk::DescriptorType::eStorageImage, 1000},
-	    {vk::DescriptorType::eUniformTexelBuffer, 1000},
-	    {vk::DescriptorType::eStorageTexelBuffer, 1000},
-	    {vk::DescriptorType::eUniformBuffer, 1000},
-	    {vk::DescriptorType::eStorageBuffer, 1000},
-	    {vk::DescriptorType::eUniformBufferDynamic, 1000},
-	    {vk::DescriptorType::eStorageBufferDynamic, 1000},
-	    {vk::DescriptorType::eInputAttachment, 1000},
+	    {vk::DescriptorType::eSampler, commonPoolSize},
+	    {vk::DescriptorType::eCombinedImageSampler, commonPoolSize},
+	    {vk::DescriptorType::eSampledImage, commonPoolSize},
+	    {vk::DescriptorType::eStorageImage, commonPoolSize},
+	    {vk::DescriptorType::eUniformTexelBuffer, commonPoolSize},
+	    {vk::DescriptorType::eStorageTexelBuffer, commonPoolSize},
+	    {vk::DescriptorType::eUniformBuffer, commonPoolSize},
+	    {vk::DescriptorType::eStorageBuffer, commonPoolSize},
+	    {vk::DescriptorType::eUniformBufferDynamic, commonPoolSize},
+	    {vk::DescriptorType::eStorageBufferDynamic, commonPoolSize},
+	    {vk::DescriptorType::eInputAttachment, commonPoolSize},
 	};
 	mImGuiDescriptorPool = std::make_unique<dubu::gfx::DescriptorPool>(
 	    dubu::gfx::DescriptorPool::CreateInfo{
 	        .device    = mDevice->GetDevice(),
 	        .poolSizes = poolSizes,
-	        .maxSets   = 1000 * static_cast<uint32_t>(poolSizes.size()) * 1000,
+	        .maxSets = static_cast<uint32_t>(poolSizes.size()) * commonPoolSize,
 	    });
 
 	IMGUI_CHECKVERSION();
