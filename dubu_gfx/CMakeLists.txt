@@ -4,6 +4,8 @@ set(src_precompiled
     "src/dubu_gfx/precompiled.h")
 
 set(src_vulkan
+    "src/dubu_gfx/vulkan/Buffer.cpp"
+    "src/dubu_gfx/vulkan/Buffer.h"
     "src/dubu_gfx/vulkan/CommandBuffer.cpp"
     "src/dubu_gfx/vulkan/CommandBuffer.h"
     "src/dubu_gfx/vulkan/CommandPool.cpp"

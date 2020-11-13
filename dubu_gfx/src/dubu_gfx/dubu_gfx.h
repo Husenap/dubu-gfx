@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "vulkan/Buffer.h"
 #include "vulkan/CommandBuffer.h"
 #include "vulkan/CommandPool.h"
 #include "vulkan/DescriptorPool.h"

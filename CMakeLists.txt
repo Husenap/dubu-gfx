@@ -21,11 +21,9 @@ include("thirdparty/dubu_log.cmake")
 add_subdirectory("dubu_gfx")
 
 if(${${PROJECT_NAME}_BUILD_TESTS})
-    #enable_testing()
-    #include(GoogleTest)
-    #include("thirdparty/googletest.cmake")
     include("thirdparty/dubu_window.cmake")
     include("thirdparty/imgui.cmake")
+    include("thirdparty/glm.cmake")
     add_subdirectory("dubu_gfx_test")
 endif()
 
