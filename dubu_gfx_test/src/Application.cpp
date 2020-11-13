@@ -13,10 +13,12 @@ constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<Vertex> VERTICES = {
-    {{+0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{+0.5f, +0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, +0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-1.0f, -1.0f}, {0.988f, 0.812f, 0.651f}},
+    {{+1.0f, -1.0f}, {0.996f, 0.592f, 0.643f}},
+    {{+1.0f, +1.0f}, {1.000f, 0.373f, 0.635f}},
+    {{-1.0f, +1.0f}, {0.996f, 0.592f, 0.643f}},
 };
+const std::vector<uint16_t> INDICES = {0, 1, 2, 0, 2, 3};
 
 dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
@@ -202,7 +204,7 @@ void Application::InitImGui() {
 		    .pCommandBuffers    = &commandBuffer.GetCommandBuffer(0),
 		});
 
-		mDevice->GetDevice().waitIdle();
+		mDevice->GetGraphicsQueue().waitIdle();
 
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
@@ -256,9 +258,14 @@ void Application::RecordCommands(uint32_t imageIndex) {
 	            .buffers = {mVertexBuffer->GetBuffer()},
 	            .offsets = {0},
 	        },
+	        dubu::gfx::DrawingCommands::BindIndexBuffer{
+	            .buffer    = mIndexBuffer->GetBuffer(),
+	            .offset    = 0,
+	            .indexType = vk::IndexType::eUint16,
+	        },
 
-	        dubu::gfx::DrawingCommands::Draw{
-	            .vertexCount   = static_cast<uint32_t>(VERTICES.size()),
+	        dubu::gfx::DrawingCommands::DrawIndexed{
+	            .indexCount    = static_cast<uint32_t>(INDICES.size()),
 	            .instanceCount = 1,
 	        },
 
@@ -538,18 +545,63 @@ void Application::CreateCommandPool() {
 }
 
 void Application::CreateVertexBuffer() {
-	mVertexBuffer =
-	    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
-	        .device         = mDevice->GetDevice(),
-	        .physicalDevice = mDevice->GetPhysicalDevice(),
-	        .size  = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
-	        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
-	        .sharingMode      = vk::SharingMode::eExclusive,
-	        .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
-	                            vk::MemoryPropertyFlagBits::eHostCoherent,
-	    });
+	{
+		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
+		    .device         = mDevice->GetDevice(),
+		    .physicalDevice = mDevice->GetPhysicalDevice(),
+		    .size  = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
+		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
+		    .sharingMode      = vk::SharingMode::eExclusive,
+		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+		                        vk::MemoryPropertyFlagBits::eHostCoherent,
+		});
 
-	mVertexBuffer->SetData(VERTICES);
+		stagingBuffer.SetData(VERTICES);
+
+		mVertexBuffer =
+		    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
+		        .device         = mDevice->GetDevice(),
+		        .physicalDevice = mDevice->GetPhysicalDevice(),
+		        .size = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
+		        .usage = vk::BufferUsageFlagBits::eVertexBuffer |
+		                 vk::BufferUsageFlagBits::eTransferDst,
+		        .sharingMode      = vk::SharingMode::eExclusive,
+		        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
+		    });
+
+		mVertexBuffer->SetData(stagingBuffer.GetBuffer(),
+		                       mDevice->GetQueueFamilies(),
+		                       mDevice->GetGraphicsQueue());
+	}
+	{
+		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
+		    .device         = mDevice->GetDevice(),
+		    .physicalDevice = mDevice->GetPhysicalDevice(),
+		    .size  = static_cast<uint32_t>(INDICES.size()) * sizeof(uint16_t),
+		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
+		    .sharingMode      = vk::SharingMode::eExclusive,
+		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+		                        vk::MemoryPropertyFlagBits::eHostCoherent,
+		});
+
+		stagingBuffer.SetData(INDICES);
+
+		mIndexBuffer =
+		    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
+		        .device         = mDevice->GetDevice(),
+		        .physicalDevice = mDevice->GetPhysicalDevice(),
+		        .size =
+		            static_cast<uint32_t>(INDICES.size()) * sizeof(uint16_t),
+		        .usage = vk::BufferUsageFlagBits::eIndexBuffer |
+		                 vk::BufferUsageFlagBits::eTransferDst,
+		        .sharingMode      = vk::SharingMode::eExclusive,
+		        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
+		    });
+
+		mIndexBuffer->SetData(stagingBuffer.GetBuffer(),
+		                      mDevice->GetQueueFamilies(),
+		                      mDevice->GetGraphicsQueue());
+	}
 }
 
 void Application::CreateCommandBuffer() {

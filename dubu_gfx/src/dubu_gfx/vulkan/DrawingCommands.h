@@ -29,10 +29,24 @@ struct BindVertexBuffers {
 	std::vector<vk::DeviceSize> offsets;
 };
 
+struct BindIndexBuffer {
+	vk::Buffer     buffer;
+	vk::DeviceSize offset;
+	vk::IndexType  indexType;
+};
+
 struct Draw {
 	uint32_t vertexCount   = {};
 	uint32_t instanceCount = {};
 	uint32_t firstVertex   = {};
+	uint32_t firstInstance = {};
+};
+
+struct DrawIndexed {
+	uint32_t indexCount    = {};
+	uint32_t instanceCount = {};
+	uint32_t firstIndex    = {};
+	uint32_t vertexOffset  = {};
 	uint32_t firstInstance = {};
 };
 

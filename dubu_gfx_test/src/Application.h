@@ -74,6 +74,7 @@ private:
 	std::unique_ptr<dubu::gfx::Framebuffer>      mFramebuffer              = {};
 	std::unique_ptr<dubu::gfx::CommandPool>      mCommandPool              = {};
 	std::unique_ptr<dubu::gfx::Buffer>           mVertexBuffer             = {};
+	std::unique_ptr<dubu::gfx::Buffer>           mIndexBuffer              = {};
 	std::unique_ptr<dubu::gfx::CommandBuffer>    mCommandBuffer            = {};
 	std::vector<vk::UniqueSemaphore>             mRenderFinishedSemaphores = {};
 	std::vector<vk::UniqueSemaphore>             mImageAvailableSemaphores = {};

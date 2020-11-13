@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QueueFamilyIndices.h"
+
 namespace dubu::gfx {
 
 class Buffer {
@@ -8,7 +10,7 @@ public:
 		vk::Device              device;
 		vk::PhysicalDevice      physicalDevice;
 		uint32_t                size;
-		vk::BufferUsageFlagBits usage;
+		vk::BufferUsageFlags    usage;
 		vk::SharingMode         sharingMode;
 		vk::MemoryPropertyFlags memoryProperties;
 	};
@@ -23,6 +25,9 @@ public:
 	}
 
 	void SetData(const void* bytes, std::size_t numBytes);
+	void SetData(const vk::Buffer&         buffer,
+	             const QueueFamilyIndices& queueFamilies,
+	             const vk::Queue&          graphicsQueue);
 
 	const vk::Buffer& GetBuffer() const { return *mBuffer; }
 
