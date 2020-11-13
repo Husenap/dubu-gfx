@@ -12,6 +12,12 @@ constexpr uint32_t WIDTH                = 1600;
 constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
 
+const std::vector<Vertex> VERTICES = {
+    {{+0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{+0.5f, +0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, +0.5f}, {0.0f, 0.0f, 1.0f}},
+};
+
 dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
@@ -36,8 +42,17 @@ void Application::Run() {
 	    *mWindow);
 	Subscribe<dubu::window::EventKeyPress>(
 	    [&](const auto& e) {
-		    if (e.key == dubu::window::Key::KeyGraveAccent) {
+		    switch (e.key) {
+		    case dubu::window::Key::KeyGraveAccent:
 			    mShowDemoWindow = !mShowDemoWindow;
+			    break;
+		    case dubu::window::Key::KeyEscape:
+			    glfwSetWindowShouldClose(mWindow->GetGLFWHandle(), GLFW_TRUE);
+			    break;
+		    default:
+			    break;
+		    }
+		    if (e.key == dubu::window::Key::KeyGraveAccent) {
 		    }
 	    },
 	    *mWindow);
@@ -91,6 +106,7 @@ void Application::InitFramework() {
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
 	CreateCommandPool();
+	CreateVertexBuffer();
 	CreateCommandBuffer();
 	CreateSyncObjects();
 }
@@ -236,8 +252,13 @@ void Application::RecordCommands(uint32_t imageIndex) {
 	            .viewports = mViewportState->GetViewports(),
 	        },
 
+	        dubu::gfx::DrawingCommands::BindVertexBuffers{
+	            .buffers = {mVertexBuffer->GetBuffer()},
+	            .offsets = {0},
+	        },
+
 	        dubu::gfx::DrawingCommands::Draw{
-	            .vertexCount   = 3,
+	            .vertexCount   = static_cast<uint32_t>(VERTICES.size()),
 	            .instanceCount = 1,
 	        },
 
@@ -416,9 +437,14 @@ void Application::CreateGraphicsPipeline() {
 	        },
 	});
 
+	auto bindingDescription    = Vertex::GetBindingDescription();
+	auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
-	    .vertexBindingDescriptionCount   = 0,
-	    .vertexAttributeDescriptionCount = 0,
+	    .vertexBindingDescriptionCount = 1,
+	    .pVertexBindingDescriptions    = &bindingDescription,
+	    .vertexAttributeDescriptionCount =
+	        static_cast<uint32_t>(attributeDescriptions.size()),
+	    .pVertexAttributeDescriptions = attributeDescriptions.data(),
 	};
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo{
@@ -509,6 +535,21 @@ void Application::CreateCommandPool() {
 	        .device        = mDevice->GetDevice(),
 	        .queueFamilies = mDevice->GetQueueFamilies(),
 	    });
+}
+
+void Application::CreateVertexBuffer() {
+	mVertexBuffer =
+	    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
+	        .device         = mDevice->GetDevice(),
+	        .physicalDevice = mDevice->GetPhysicalDevice(),
+	        .size  = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
+	        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
+	        .sharingMode      = vk::SharingMode::eExclusive,
+	        .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+	                            vk::MemoryPropertyFlagBits::eHostCoherent,
+	    });
+
+	mVertexBuffer->SetData(VERTICES);
 }
 
 void Application::CreateCommandBuffer() {

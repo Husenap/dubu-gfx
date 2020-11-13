@@ -24,6 +24,11 @@ struct SetViewport {
 	std::vector<vk::Viewport> viewports = {};
 };
 
+struct BindVertexBuffers {
+	std::vector<vk::Buffer>     buffers;
+	std::vector<vk::DeviceSize> offsets;
+};
+
 struct Draw {
 	uint32_t vertexCount   = {};
 	uint32_t instanceCount = {};

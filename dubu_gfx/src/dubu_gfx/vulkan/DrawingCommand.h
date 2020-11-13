@@ -9,6 +9,7 @@ using DrawingCommand = std::variant<DrawingCommands::Custom,
                                     DrawingCommands::EndRenderPass,
                                     DrawingCommands::BindPipeline,
                                     DrawingCommands::SetViewport,
+                                    DrawingCommands::BindVertexBuffers,
                                     DrawingCommands::Draw>;
 
 namespace internal {
@@ -29,6 +30,7 @@ public:
 	void operator()(const DrawingCommands::EndRenderPass& cmd);
 	void operator()(const DrawingCommands::BindPipeline& cmd);
 	void operator()(const DrawingCommands::SetViewport& cmd);
+	void operator()(const DrawingCommands::BindVertexBuffers& cmd);
 	void operator()(const DrawingCommands::Draw& cmd);
 
 private:

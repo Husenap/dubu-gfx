@@ -33,6 +33,11 @@ void DrawingCommandVisitor::operator()(
 	mCommandBuffer.setViewport(0, cmd.viewports);
 }
 
+void DrawingCommandVisitor::operator()(
+    const DrawingCommands::BindVertexBuffers& cmd) {
+	mCommandBuffer.bindVertexBuffers(0, cmd.buffers, cmd.offsets);
+}
+
 void DrawingCommandVisitor::operator()(const DrawingCommands::Draw& cmd) {
 	mCommandBuffer.draw(
 	    cmd.vertexCount, cmd.instanceCount, cmd.firstVertex, cmd.firstInstance);
