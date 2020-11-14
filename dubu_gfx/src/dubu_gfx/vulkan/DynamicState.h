@@ -6,7 +6,7 @@ class DynamicState {
 public:
 	DynamicState(const std::vector<vk::DynamicState>& dynamicStates);
 
-	vk::PipelineDynamicStateCreateInfo GetDynamicState() const;
+	[[nodiscard]] vk::PipelineDynamicStateCreateInfo GetDynamicState() const;
 
 private:
 	std::vector<vk::DynamicState> mDynamicStates;

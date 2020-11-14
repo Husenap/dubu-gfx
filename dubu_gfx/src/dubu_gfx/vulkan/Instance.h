@@ -18,7 +18,7 @@ public:
 public:
 	Instance(const CreateInfo& createInfo);
 
-	vk::Instance GetInstance() const { return *mInstance; }
+	[[nodiscard]] const vk::Instance& GetInstance() const { return *mInstance; }
 
 private:
 	vk::UniqueInstance mInstance;

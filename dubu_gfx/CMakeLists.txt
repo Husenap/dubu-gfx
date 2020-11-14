@@ -4,12 +4,18 @@ set(src_precompiled
     "src/dubu_gfx/precompiled.h")
 
 set(src_vulkan
+    "src/dubu_gfx/vulkan/Buffer.cpp"
+    "src/dubu_gfx/vulkan/Buffer.h"
     "src/dubu_gfx/vulkan/CommandBuffer.cpp"
     "src/dubu_gfx/vulkan/CommandBuffer.h"
     "src/dubu_gfx/vulkan/CommandPool.cpp"
     "src/dubu_gfx/vulkan/CommandPool.h"
     "src/dubu_gfx/vulkan/DescriptorPool.cpp"
     "src/dubu_gfx/vulkan/DescriptorPool.h"
+    "src/dubu_gfx/vulkan/DescriptorSet.cpp"
+    "src/dubu_gfx/vulkan/DescriptorSet.h"
+    "src/dubu_gfx/vulkan/DescriptorSetLayout.cpp"
+    "src/dubu_gfx/vulkan/DescriptorSetLayout.h"
     "src/dubu_gfx/vulkan/Device.cpp"
     "src/dubu_gfx/vulkan/Device.h"
     "src/dubu_gfx/vulkan/DrawingCommand.cpp"

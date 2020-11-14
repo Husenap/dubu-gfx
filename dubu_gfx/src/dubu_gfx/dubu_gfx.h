@@ -2,9 +2,12 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "vulkan/Buffer.h"
 #include "vulkan/CommandBuffer.h"
 #include "vulkan/CommandPool.h"
 #include "vulkan/DescriptorPool.h"
+#include "vulkan/DescriptorSet.h"
+#include "vulkan/DescriptorSetLayout.h"
 #include "vulkan/Device.h"
 #include "vulkan/DrawingCommand.h"
 #include "vulkan/DrawingCommands.h"

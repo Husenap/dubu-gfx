@@ -9,15 +9,19 @@ class Device {
 public:
 	Device(vk::Instance instance, vk::SurfaceKHR surface);
 
-	const vk::PhysicalDevice& GetPhysicalDevice() const {
+	[[nodiscard]] const vk::PhysicalDevice& GetPhysicalDevice() const {
 		return mPhysicalDevice;
 	}
-	const vk::Device& GetDevice() const { return *mDevice; }
+	[[nodiscard]] const vk::Device& GetDevice() const { return *mDevice; }
 
-	const vk::Queue& GetGraphicsQueue() const { return mGraphicsQueue; }
-	const vk::Queue& GetPresentQueue() const { return mPresentQueue; }
+	[[nodiscard]] const vk::Queue& GetGraphicsQueue() const {
+		return mGraphicsQueue;
+	}
+	[[nodiscard]] const vk::Queue& GetPresentQueue() const {
+		return mPresentQueue;
+	}
 
-	const QueueFamilyIndices& GetQueueFamilies() const {
+	[[nodiscard]] const QueueFamilyIndices& GetQueueFamilies() const {
 		return mQueueFamilies;
 	}
 

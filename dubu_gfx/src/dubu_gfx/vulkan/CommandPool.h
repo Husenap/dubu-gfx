@@ -11,7 +11,9 @@ public:
 		QueueFamilyIndices queueFamilies = {};
 	};
 
-	vk::CommandPool GetCommandPool() const { return *mCommandPool; }
+	[[nodiscard]] const vk::CommandPool& GetCommandPool() const {
+		return *mCommandPool;
+	}
 
 public:
 	CommandPool(const CreateInfo& createInfo);

@@ -33,9 +33,37 @@ void DrawingCommandVisitor::operator()(
 	mCommandBuffer.setViewport(0, cmd.viewports);
 }
 
+void DrawingCommandVisitor::operator()(
+    const DrawingCommands::BindVertexBuffers& cmd) {
+	mCommandBuffer.bindVertexBuffers(0, cmd.buffers, cmd.offsets);
+}
+
+void DrawingCommandVisitor::operator()(
+    const DrawingCommands::BindIndexBuffer& cmd) {
+	mCommandBuffer.bindIndexBuffer(cmd.buffer, cmd.offset, cmd.indexType);
+}
+
+void DrawingCommandVisitor::operator()(
+    const DrawingCommands::BindDescriptorSets& cmd) {
+	mCommandBuffer.bindDescriptorSets(cmd.bindPoint,
+	                                  cmd.pipelineLayout,
+	                                  cmd.firstSet,
+	                                  cmd.descriptorSets,
+	                                  cmd.dynamicOffsets);
+}
+
 void DrawingCommandVisitor::operator()(const DrawingCommands::Draw& cmd) {
 	mCommandBuffer.draw(
 	    cmd.vertexCount, cmd.instanceCount, cmd.firstVertex, cmd.firstInstance);
+}
+
+void DrawingCommandVisitor::operator()(
+    const DrawingCommands::DrawIndexed& cmd) {
+	mCommandBuffer.drawIndexed(cmd.indexCount,
+	                           cmd.instanceCount,
+	                           cmd.firstIndex,
+	                           cmd.vertexOffset,
+	                           cmd.firstInstance);
 }
 
 }  // namespace dubu::gfx::internal

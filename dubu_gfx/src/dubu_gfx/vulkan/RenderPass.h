@@ -27,7 +27,9 @@ public:
 public:
 	RenderPass(const CreateInfo& ci);
 
-	vk::RenderPass GetRenderPass() const { return *mRenderPass; }
+	[[nodiscard]] const vk::RenderPass& GetRenderPass() const {
+		return *mRenderPass;
+	}
 
 private:
 	vk::UniqueRenderPass mRenderPass;

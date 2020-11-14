@@ -1,4 +1,4 @@
-include("thirdparty/vulkan/glslang.cmake")
+#include("thirdparty/vulkan/glslang.cmake")
 include("thirdparty/vulkan/vulkan_headers.cmake")
 include("thirdparty/vulkan/vulkan_loader.cmake")
 
