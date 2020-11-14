@@ -32,7 +32,7 @@ std::optional<uint32_t> DeviceMemory::FindMemoryType() {
 	auto memProperties = mCreateInfo.physicalDevice.getMemoryProperties();
 
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
-		if (mCreateInfo.typeFilter & (1 << i) &&
+		if (mCreateInfo.typeFilter & (1ui32 << i) &&
 		    (memProperties.memoryTypes[i].propertyFlags &
 		     mCreateInfo.memoryProperties) == mCreateInfo.memoryProperties) {
 			return i;

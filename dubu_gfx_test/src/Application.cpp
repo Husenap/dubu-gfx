@@ -183,6 +183,7 @@ void Application::InitImGui() {
 	    .DescriptorPool  = mImGuiDescriptorPool->GetDescriptorPool(),
 	    .MinImageCount   = mFramebuffer->GetFramebufferCount(),
 	    .ImageCount      = mFramebuffer->GetFramebufferCount(),
+	    .MSAASamples     = VK_SAMPLE_COUNT_1_BIT,
 	    .CheckVkResultFn = CheckVkResult,
 	};
 	ImGui_ImplVulkan_Init(&initInfo, mRenderPass->GetRenderPass());
@@ -314,7 +315,7 @@ void Application::UpdateUniformBuffer(uint32_t imageIndex) {
                             glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
 	        glm::radians(45.f),
-	        mSwapchain->GetExtent().width /
+	        static_cast<float>(mSwapchain->GetExtent().width) /
 	            static_cast<float>(mSwapchain->GetExtent().height),
 	        0.1f,
 	        10.f),
@@ -630,7 +631,8 @@ void Application::CreateTextureImage() {
 	                          &textureSize.y,
 	                          &textureChannels,
 	                          STBI_rgb_alpha);
-	uint32_t imageSize = textureSize.x * textureSize.y * 4;
+	uint32_t imageSize =
+	    static_cast<uint32_t>(textureSize.x * textureSize.y * 4);
 
 	if (!pixels) {
 		DUBU_LOG_FATAL("Failed to load texure image: {}", imagePath);
@@ -704,7 +706,7 @@ void Application::CreateVertexBuffer() {
 		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
 		    .device         = mDevice->GetDevice(),
 		    .physicalDevice = mDevice->GetPhysicalDevice(),
-		    .size  = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
+		    .size  = static_cast<uint32_t>(VERTICES.size() * sizeof(Vertex)),
 		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
 		    .sharingMode      = vk::SharingMode::eExclusive,
 		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
@@ -717,7 +719,7 @@ void Application::CreateVertexBuffer() {
 		    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
 		        .device         = mDevice->GetDevice(),
 		        .physicalDevice = mDevice->GetPhysicalDevice(),
-		        .size = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
+		        .size = static_cast<uint32_t>(VERTICES.size() * sizeof(Vertex)),
 		        .usage = vk::BufferUsageFlagBits::eVertexBuffer |
 		                 vk::BufferUsageFlagBits::eTransferDst,
 		        .sharingMode      = vk::SharingMode::eExclusive,
@@ -732,7 +734,7 @@ void Application::CreateVertexBuffer() {
 		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
 		    .device         = mDevice->GetDevice(),
 		    .physicalDevice = mDevice->GetPhysicalDevice(),
-		    .size  = static_cast<uint32_t>(INDICES.size()) * sizeof(uint16_t),
+		    .size  = static_cast<uint32_t>(INDICES.size() * sizeof(uint16_t)),
 		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
 		    .sharingMode      = vk::SharingMode::eExclusive,
 		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
@@ -746,7 +748,7 @@ void Application::CreateVertexBuffer() {
 		        .device         = mDevice->GetDevice(),
 		        .physicalDevice = mDevice->GetPhysicalDevice(),
 		        .size =
-		            static_cast<uint32_t>(INDICES.size()) * sizeof(uint16_t),
+		            static_cast<uint32_t>(INDICES.size() * sizeof(uint16_t)),
 		        .usage = vk::BufferUsageFlagBits::eIndexBuffer |
 		                 vk::BufferUsageFlagBits::eTransferDst,
 		        .sharingMode      = vk::SharingMode::eExclusive,
