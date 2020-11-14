@@ -14,10 +14,10 @@ public:
 public:
 	Framebuffer(const CreateInfo& createInfo);
 
-	uint32_t GetFramebufferCount() const {
+	[[nodiscard]] uint32_t GetFramebufferCount() const {
 		return static_cast<uint32_t>(mUniqueFramebuffers.size());
 	}
-	const std::vector<vk::Framebuffer>& GetFramebuffers() const {
+	[[nodiscard]] const std::vector<vk::Framebuffer>& GetFramebuffers() const {
 		return mFramebuffers;
 	}
 

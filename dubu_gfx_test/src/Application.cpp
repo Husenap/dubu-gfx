@@ -13,10 +13,10 @@ constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<Vertex> VERTICES = {
-    {{-1.0f, -1.0f}, {0.988f, 0.812f, 0.651f}},
-    {{+1.0f, -1.0f}, {0.996f, 0.592f, 0.643f}},
-    {{+1.0f, +1.0f}, {1.000f, 0.373f, 0.635f}},
-    {{-1.0f, +1.0f}, {0.996f, 0.592f, 0.643f}},
+    {{-0.5f, 0.0f, -0.5f}, {0.988f, 0.812f, 0.651f}},
+    {{+0.5f, 0.0f, -0.5f}, {0.996f, 0.592f, 0.643f}},
+    {{+0.5f, 0.0f, +0.5f}, {1.000f, 0.373f, 0.635f}},
+    {{-0.5f, 0.0f, +0.5f}, {0.996f, 0.592f, 0.643f}},
 };
 const std::vector<uint16_t> INDICES = {0, 1, 2, 0, 2, 3};
 
@@ -105,10 +105,14 @@ void Application::InitFramework() {
 	CreateDevice();
 	CreateSwapchain();
 	CreateRenderPass();
+	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
 	CreateCommandPool();
 	CreateVertexBuffer();
+	CreateUniformBuffers();
+	CreateDescriptorPool();
+	CreateDescriptorSets();
 	CreateCommandBuffer();
 	CreateSyncObjects();
 }
@@ -218,8 +222,12 @@ void Application::RecreateSwapchain() {
 	mDevice->GetDevice().waitIdle();
 
 	mCommandBuffer.reset();
+	mDescriptorSet.reset();
+	mDescriptorPool.reset();
+	mUniformBuffers.clear();
 	mFramebuffer.reset();
 	mGraphicsPipeline.reset();
+	mPipelineLayout.reset();
 	mRenderPass.reset();
 	mSwapchain.reset();
 
@@ -227,6 +235,9 @@ void Application::RecreateSwapchain() {
 	CreateRenderPass();
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
+	CreateUniformBuffers();
+	CreateDescriptorPool();
+	CreateDescriptorSets();
 	CreateCommandBuffer();
 
 	ImGui_ImplVulkan_SetMinImageCount(mFramebuffer->GetFramebufferCount());
@@ -263,6 +274,12 @@ void Application::RecordCommands(uint32_t imageIndex) {
 	            .offset    = 0,
 	            .indexType = vk::IndexType::eUint16,
 	        },
+	        dubu::gfx::DrawingCommands::BindDescriptorSets{
+	            .bindPoint      = vk::PipelineBindPoint::eGraphics,
+	            .pipelineLayout = *mPipelineLayout,
+	            .descriptorSets = {mDescriptorSet->GetDescriptorSet(
+	                static_cast<std::size_t>(imageIndex))},
+	        },
 
 	        dubu::gfx::DrawingCommands::DrawIndexed{
 	            .indexCount    = static_cast<uint32_t>(INDICES.size()),
@@ -278,6 +295,29 @@ void Application::RecordCommands(uint32_t imageIndex) {
 
 	        dubu::gfx::DrawingCommands::EndRenderPass{},
 	    });
+}
+
+void Application::UpdateUniformBuffer(uint32_t imageIndex) {
+	auto time = static_cast<float>(glfwGetTime());
+
+	UniformBufferObject ubo{
+	    .model      = glm::rotate(glm::mat4(1.f),
+                             time * glm::radians(90.f),
+                             glm::vec3(0.f, 1.f, 0.f)),
+	    .view       = glm::lookAt(glm::vec3(0.f, 2.f, 2.f),
+                            glm::vec3(0.f, 0.f, 0.f),
+                            glm::vec3(0.f, 1.f, 0.f)),
+	    .projection = glm::perspective(
+	        glm::radians(45.f),
+	        mSwapchain->GetExtent().width /
+	            static_cast<float>(mSwapchain->GetExtent().height),
+	        0.1f,
+	        10.f),
+	};
+
+	ubo.projection[1][1] *= -1.f;
+
+	mUniformBuffers[imageIndex]->SetData(ubo);
 }
 
 void Application::DrawFrame() {
@@ -324,6 +364,8 @@ void Application::DrawFrame() {
 	}
 
 	RecordCommands(imageIndex);
+
+	UpdateUniformBuffer(imageIndex);
 
 	vk::Semaphore waitSemaphores[] = {
 	    *mImageAvailableSemaphores[mCurrentFrame]};
@@ -432,6 +474,19 @@ void Application::CreateRenderPass() {
 	    });
 }
 
+void Application::CreateDescriptorSetLayout() {
+	mDescriptorSetLayout = std::make_unique<dubu::gfx::DescriptorSetLayout>(
+	    dubu::gfx::DescriptorSetLayout::CreateInfo{
+	        .device   = mDevice->GetDevice(),
+	        .bindings = {{
+	            .binding         = 0,
+	            .descriptorType  = vk::DescriptorType::eUniformBuffer,
+	            .descriptorCount = 1,
+	            .stageFlags      = vk::ShaderStageFlagBits::eVertex,
+	        }},
+	    });
+}
+
 void Application::CreateGraphicsPipeline() {
 	dubu::gfx::Shader shader({
 	    .device = mDevice->GetDevice(),
@@ -444,8 +499,8 @@ void Application::CreateGraphicsPipeline() {
 	        },
 	});
 
-	auto bindingDescription    = Vertex::GetBindingDescription();
-	auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+	const auto bindingDescription    = Vertex::GetBindingDescription();
+	const auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
 	    .vertexBindingDescriptionCount = 1,
 	    .pVertexBindingDescriptions    = &bindingDescription,
@@ -506,8 +561,11 @@ void Application::CreateGraphicsPipeline() {
 	dubu::gfx::DynamicState dynamicState(
 	    {vk::DynamicState::eViewport, vk::DynamicState::eLineWidth});
 
-	vk::UniquePipelineLayout pipelineLayout =
-	    mDevice->GetDevice().createPipelineLayoutUnique({});
+	mPipelineLayout = mDevice->GetDevice().createPipelineLayoutUnique(
+	    vk::PipelineLayoutCreateInfo{
+	        .setLayoutCount = 1,
+	        .pSetLayouts    = &mDescriptorSetLayout->GetDescriptorSetLayout(),
+	    });
 
 	mGraphicsPipeline = std::make_unique<dubu::gfx::GraphicsPipeline>(
 	    dubu::gfx::GraphicsPipeline::CreateInfo{
@@ -520,7 +578,7 @@ void Application::CreateGraphicsPipeline() {
 	        .multisampleState   = multisampleInfo,
 	        .colorBlendState    = colorBlendInfo,
 	        .dynamicState       = dynamicState.GetDynamicState(),
-	        .pipelineLayout     = *pipelineLayout,
+	        .pipelineLayout     = *mPipelineLayout,
 	        .renderPass         = mRenderPass->GetRenderPass(),
 	        .subpass            = 0,
 	    });
@@ -604,6 +662,53 @@ void Application::CreateVertexBuffer() {
 	}
 }
 
+void Application::CreateUniformBuffers() {
+	for (std::size_t i = 0; i < mSwapchain->GetImageCount(); ++i) {
+		mUniformBuffers.push_back(
+		    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
+		        .device           = mDevice->GetDevice(),
+		        .physicalDevice   = mDevice->GetPhysicalDevice(),
+		        .size             = sizeof(UniformBufferObject),
+		        .usage            = vk::BufferUsageFlagBits::eUniformBuffer,
+		        .sharingMode      = vk::SharingMode::eExclusive,
+		        .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+		                            vk::MemoryPropertyFlagBits::eHostCoherent,
+		    }));
+	}
+}
+
+void Application::CreateDescriptorPool() {
+	mDescriptorPool = std::make_unique<dubu::gfx::DescriptorPool>(
+	    dubu::gfx::DescriptorPool::CreateInfo{
+	        .device = mDevice->GetDevice(),
+	        .poolSizes =
+	            {
+	                {vk::DescriptorType::eUniformBuffer,
+	                 static_cast<uint32_t>(mSwapchain->GetImageCount())},
+	            },
+	        .maxSets = static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	    });
+}
+
+void Application::CreateDescriptorSets() {
+	mDescriptorSet = std::make_unique<dubu::gfx::DescriptorSet>(
+	    dubu::gfx::DescriptorSet::CreateInfo{
+	        .device         = mDevice->GetDevice(),
+	        .descriptorPool = mDescriptorPool->GetDescriptorPool(),
+	        .descriptorSetCount =
+	            static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	        .layouts = std::vector<vk::DescriptorSetLayout>(
+	            mSwapchain->GetImageCount(),
+	            mDescriptorSetLayout->GetDescriptorSetLayout()),
+	    });
+
+	std::vector<vk::Buffer> buffers;
+	for (auto& uniformBuffer : mUniformBuffers) {
+		buffers.push_back(uniformBuffer->GetBuffer());
+	}
+	mDescriptorSet->UpdateDescriptorSets(buffers);
+}
+
 void Application::CreateCommandBuffer() {
 	mCommandBuffer = std::make_unique<dubu::gfx::CommandBuffer>(
 	    dubu::gfx::CommandBuffer::CreateInfo{
@@ -617,7 +722,7 @@ void Application::CreateSyncObjects() {
 	mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-	mImagesInFlight.resize(mSwapchain->GetImageViews().size());
+	mImagesInFlight.resize(mSwapchain->GetImageCount());
 	for (std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		mRenderFinishedSemaphores[i] =
 		    mDevice->GetDevice().createSemaphoreUnique({});

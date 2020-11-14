@@ -43,6 +43,15 @@ void DrawingCommandVisitor::operator()(
 	mCommandBuffer.bindIndexBuffer(cmd.buffer, cmd.offset, cmd.indexType);
 }
 
+void DrawingCommandVisitor::operator()(
+    const DrawingCommands::BindDescriptorSets& cmd) {
+	mCommandBuffer.bindDescriptorSets(cmd.bindPoint,
+	                                  cmd.pipelineLayout,
+	                                  cmd.firstSet,
+	                                  cmd.descriptorSets,
+	                                  cmd.dynamicOffsets);
+}
+
 void DrawingCommandVisitor::operator()(const DrawingCommands::Draw& cmd) {
 	mCommandBuffer.draw(
 	    cmd.vertexCount, cmd.instanceCount, cmd.firstVertex, cmd.firstInstance);

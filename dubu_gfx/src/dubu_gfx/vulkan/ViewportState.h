@@ -12,8 +12,8 @@ public:
 public:
 	ViewportState(const CreateInfo& ci);
 
-	vk::PipelineViewportStateCreateInfo GetViewportState() const;
-	const std::vector<vk::Viewport>&    GetViewports() const {
+	[[nodiscard]] vk::PipelineViewportStateCreateInfo GetViewportState() const;
+	[[nodiscard]] const std::vector<vk::Viewport>&    GetViewports() const {
         return mCreateInfo.viewports;
 	}
 

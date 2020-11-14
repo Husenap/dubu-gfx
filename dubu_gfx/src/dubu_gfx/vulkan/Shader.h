@@ -14,7 +14,7 @@ public:
 public:
 	Shader(const CreateInfo& ci);
 
-	const auto& GetShaderStages() const { return mShaderStages; }
+	[[nodiscard]] const auto& GetShaderStages() const { return mShaderStages; }
 
 private:
 	std::vector<vk::PipelineShaderStageCreateInfo> mShaderStages;

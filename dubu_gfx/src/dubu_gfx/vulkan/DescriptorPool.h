@@ -10,12 +10,12 @@ public:
 		uint32_t                            maxSets   = {};
 	};
 
-	const vk::DescriptorPool& GetDescriptorPool() const {
-		return *mDescriptorPool;
-	}
-
 public:
 	DescriptorPool(const CreateInfo& createInfo);
+
+	[[nodiscard]] const vk::DescriptorPool& GetDescriptorPool() const {
+		return *mDescriptorPool;
+	}
 
 private:
 	vk::UniqueDescriptorPool mDescriptorPool;

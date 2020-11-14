@@ -17,10 +17,17 @@ public:
 public:
 	Swapchain(const CreateInfo& createInfo);
 
-	vk::Format                 GetImageFormat() const { return mImageFormat; }
-	const vk::Extent2D&        GetExtent() const { return mExtent; }
-	std::vector<vk::ImageView> GetImageViews() const { return mImageViews; }
-	const vk::SwapchainKHR&    GetSwapchain() const { return *mSwapchain; }
+	[[nodiscard]] vk::Format GetImageFormat() const { return mImageFormat; }
+	[[nodiscard]] const vk::Extent2D& GetExtent() const { return mExtent; }
+	[[nodiscard]] const std::size_t   GetImageCount() const {
+        return mImageViews.size();
+	}
+	[[nodiscard]] const std::vector<vk::ImageView>& GetImageViews() const {
+		return mImageViews;
+	}
+	[[nodiscard]] const vk::SwapchainKHR& GetSwapchain() const {
+		return *mSwapchain;
+	}
 
 private:
 	vk::SurfaceFormatKHR ChooseSurfaceFormat(

@@ -7,12 +7,12 @@ namespace dubu::gfx {
 class Buffer {
 public:
 	struct CreateInfo {
-		vk::Device              device;
-		vk::PhysicalDevice      physicalDevice;
-		uint32_t                size;
-		vk::BufferUsageFlags    usage;
-		vk::SharingMode         sharingMode;
-		vk::MemoryPropertyFlags memoryProperties;
+		vk::Device              device           = {};
+		vk::PhysicalDevice      physicalDevice   = {};
+		uint32_t                size             = {};
+		vk::BufferUsageFlags    usage            = {};
+		vk::SharingMode         sharingMode      = {};
+		vk::MemoryPropertyFlags memoryProperties = {};
 	};
 
 public:
@@ -24,12 +24,17 @@ public:
 		        data.size() * sizeof(T));
 	}
 
+	template <typename T>
+	void SetData(const T& data) {
+		SetData(reinterpret_cast<const void*>(&data), sizeof(T));
+	}
+
 	void SetData(const void* bytes, std::size_t numBytes);
 	void SetData(const vk::Buffer&         buffer,
 	             const QueueFamilyIndices& queueFamilies,
 	             const vk::Queue&          graphicsQueue);
 
-	const vk::Buffer& GetBuffer() const { return *mBuffer; }
+	[[nodiscard]] const vk::Buffer& GetBuffer() const { return *mBuffer; }
 
 private:
 	std::optional<uint32_t> FindMemoryType(uint32_t                typeFilter,

@@ -25,14 +25,22 @@ struct SetViewport {
 };
 
 struct BindVertexBuffers {
-	std::vector<vk::Buffer>     buffers;
-	std::vector<vk::DeviceSize> offsets;
+	std::vector<vk::Buffer>     buffers = {};
+	std::vector<vk::DeviceSize> offsets = {};
 };
 
 struct BindIndexBuffer {
-	vk::Buffer     buffer;
-	vk::DeviceSize offset;
-	vk::IndexType  indexType;
+	vk::Buffer     buffer    = {};
+	vk::DeviceSize offset    = {};
+	vk::IndexType  indexType = {};
+};
+
+struct BindDescriptorSets {
+	vk::PipelineBindPoint          bindPoint      = {};
+	vk::PipelineLayout             pipelineLayout = {};
+	uint32_t                       firstSet       = {};
+	std::vector<vk::DescriptorSet> descriptorSets = {};
+	std::vector<uint32_t>          dynamicOffsets = {};
 };
 
 struct Draw {

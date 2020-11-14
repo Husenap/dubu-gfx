@@ -11,6 +11,7 @@ using DrawingCommand = std::variant<DrawingCommands::Custom,
                                     DrawingCommands::SetViewport,
                                     DrawingCommands::BindVertexBuffers,
                                     DrawingCommands::BindIndexBuffer,
+                                    DrawingCommands::BindDescriptorSets,
                                     DrawingCommands::Draw,
                                     DrawingCommands::DrawIndexed>;
 
@@ -24,7 +25,7 @@ public:
 	    , mCommandBufferIndex(commandBufferIndex) {}
 
 	void operator()(const DrawingCommand&) {
-		throw std::runtime_error("DrawingCommand Type Missing Implementation!");
+		DUBU_LOG_FATAL("DrawingCommand Type Missing Implementation!");
 	}
 
 	void operator()(const DrawingCommands::Custom& cmd);
@@ -34,6 +35,7 @@ public:
 	void operator()(const DrawingCommands::SetViewport& cmd);
 	void operator()(const DrawingCommands::BindVertexBuffers& cmd);
 	void operator()(const DrawingCommands::BindIndexBuffer& cmd);
+	void operator()(const DrawingCommands::BindDescriptorSets& cmd);
 	void operator()(const DrawingCommands::Draw& cmd);
 	void operator()(const DrawingCommands::DrawIndexed& cmd);
 

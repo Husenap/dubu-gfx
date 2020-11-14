@@ -20,7 +20,8 @@ public:
 	void RecordCommandsForAllBuffers(
 	    const std::vector<DrawingCommand>& drawingCommands);
 
-	const vk::CommandBuffer& GetCommandBuffer(std::size_t index) const {
+	[[nodiscard]] const vk::CommandBuffer& GetCommandBuffer(
+	    std::size_t index) const {
 		return *mCommandBuffers[index];
 	}
 
