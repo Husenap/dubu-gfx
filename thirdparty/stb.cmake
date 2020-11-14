@@ -14,7 +14,7 @@ if(NOT stb_POPULATED)
 
     add_library(stb INTERFACE)
 
-    target_include_directories(stb INTERFACE
+    target_include_directories(stb SYSTEM INTERFACE
         "${stb_SOURCE_DIR}"
         "${stb_SOURCE_DIR}/..")
 endif()
