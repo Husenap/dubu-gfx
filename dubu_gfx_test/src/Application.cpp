@@ -16,10 +16,10 @@ constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<Vertex> VERTICES = {
-    {{-0.5f, 0.0f, -0.5f}, {0.988f, 0.812f, 0.651f}},
-    {{+0.5f, 0.0f, -0.5f}, {0.996f, 0.592f, 0.643f}},
-    {{+0.5f, 0.0f, +0.5f}, {1.000f, 0.373f, 0.635f}},
-    {{-0.5f, 0.0f, +0.5f}, {0.996f, 0.592f, 0.643f}},
+    {{-1.0f, 0.0f, -1.0f}, {0.988f, 0.812f, 0.651f}, {0.f, 0.f}},
+    {{+1.0f, 0.0f, -1.0f}, {0.996f, 0.592f, 0.643f}, {1.f, 0.f}},
+    {{+1.0f, 0.0f, +1.0f}, {1.000f, 0.373f, 0.635f}, {1.f, 1.f}},
+    {{-1.0f, 0.0f, +1.0f}, {0.996f, 0.592f, 0.643f}, {0.f, 1.f}},
 };
 const std::vector<uint16_t> INDICES = {0, 1, 2, 0, 2, 3};
 
@@ -482,13 +482,23 @@ void Application::CreateRenderPass() {
 void Application::CreateDescriptorSetLayout() {
 	mDescriptorSetLayout = std::make_unique<dubu::gfx::DescriptorSetLayout>(
 	    dubu::gfx::DescriptorSetLayout::CreateInfo{
-	        .device   = mDevice->GetDevice(),
-	        .bindings = {{
-	            .binding         = 0,
-	            .descriptorType  = vk::DescriptorType::eUniformBuffer,
-	            .descriptorCount = 1,
-	            .stageFlags      = vk::ShaderStageFlagBits::eVertex,
-	        }},
+	        .device = mDevice->GetDevice(),
+	        .bindings =
+	            {
+	                {
+	                    .binding         = 0,
+	                    .descriptorType  = vk::DescriptorType::eUniformBuffer,
+	                    .descriptorCount = 1,
+	                    .stageFlags      = vk::ShaderStageFlagBits::eVertex,
+	                },
+	                {
+	                    .binding = 1,
+	                    .descriptorType =
+	                        vk::DescriptorType::eCombinedImageSampler,
+	                    .descriptorCount = 1,
+	                    .stageFlags      = vk::ShaderStageFlagBits::eFragment,
+	                },
+	            },
 	    });
 }
 
@@ -680,6 +690,13 @@ void Application::CreateTextureImage() {
 	    vk::ImageLayout::eShaderReadOnlyOptimal,
 	    mDevice->GetQueueFamilies(),
 	    mDevice->GetGraphicsQueue());
+
+	mTextureSampler =
+	    std::make_unique<dubu::gfx::Sampler>(dubu::gfx::Sampler::CreateInfo{
+	        .device      = mDevice->GetDevice(),
+	        .filter      = vk::Filter::eLinear,
+	        .addressMode = vk::SamplerAddressMode::eRepeat,
+	    });
 }
 
 void Application::CreateVertexBuffer() {
@@ -763,8 +780,14 @@ void Application::CreateDescriptorPool() {
 	        .device = mDevice->GetDevice(),
 	        .poolSizes =
 	            {
-	                {vk::DescriptorType::eUniformBuffer,
-	                 static_cast<uint32_t>(mSwapchain->GetImageCount())},
+	                {
+	                    vk::DescriptorType::eUniformBuffer,
+	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	                },
+	                {
+	                    vk::DescriptorType::eCombinedImageSampler,
+	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	                },
 	            },
 	        .maxSets = static_cast<uint32_t>(mSwapchain->GetImageCount()),
 	    });
@@ -782,11 +805,34 @@ void Application::CreateDescriptorSets() {
 	            mDescriptorSetLayout->GetDescriptorSetLayout()),
 	    });
 
-	std::vector<vk::Buffer> buffers;
-	for (auto& uniformBuffer : mUniformBuffers) {
-		buffers.push_back(uniformBuffer->GetBuffer());
+	for (std::size_t i = 0; i < mSwapchain->GetImageCount(); ++i) {
+		std::vector<vk::WriteDescriptorSet> descriptorWrites;
+		vk::DescriptorBufferInfo            bufferInfo{
+            .buffer = mUniformBuffers[i]->GetBuffer(),
+            .offset = 0,
+            .range  = VK_WHOLE_SIZE,
+        };
+		descriptorWrites.push_back(vk::WriteDescriptorSet{
+		    .dstBinding      = 0,
+		    .dstArrayElement = 0,
+		    .descriptorCount = 1,
+		    .descriptorType  = vk::DescriptorType::eUniformBuffer,
+		    .pBufferInfo     = &bufferInfo});
+
+		vk::DescriptorImageInfo imageInfo{
+		    .sampler     = mTextureSampler->GetSampler(),
+		    .imageView   = mTextureImage->GetImageView(),
+		    .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+		};
+		descriptorWrites.push_back(vk::WriteDescriptorSet{
+		    .dstBinding      = 1,
+		    .dstArrayElement = 0,
+		    .descriptorCount = 1,
+		    .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
+		    .pImageInfo      = &imageInfo});
+
+		mDescriptorSet->UpdateDescriptorSets(i, descriptorWrites);
 	}
-	mDescriptorSet->UpdateDescriptorSets(buffers);
 }
 
 void Application::CreateCommandBuffer() {

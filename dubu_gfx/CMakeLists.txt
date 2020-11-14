@@ -37,6 +37,8 @@ set(src_vulkan
     "src/dubu_gfx/vulkan/QueueFamilyIndices.h"
     "src/dubu_gfx/vulkan/RenderPass.cpp"
     "src/dubu_gfx/vulkan/RenderPass.h"
+    "src/dubu_gfx/vulkan/Sampler.cpp"
+    "src/dubu_gfx/vulkan/Sampler.h"
     "src/dubu_gfx/vulkan/Shader.cpp"
     "src/dubu_gfx/vulkan/Shader.h"
     "src/dubu_gfx/vulkan/ShaderModule.cpp"

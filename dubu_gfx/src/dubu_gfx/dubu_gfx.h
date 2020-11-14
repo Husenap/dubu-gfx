@@ -17,6 +17,7 @@
 #include "vulkan/Image.h"
 #include "vulkan/Instance.h"
 #include "vulkan/RenderPass.h"
+#include "vulkan/Sampler.h"
 #include "vulkan/Shader.h"
 #include "vulkan/ShaderModule.h"
 #include "vulkan/Surface.h"

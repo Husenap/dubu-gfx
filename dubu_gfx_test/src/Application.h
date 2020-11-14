@@ -8,6 +8,7 @@
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 color;
+	glm::vec2 texCoord;
 
 	static auto GetBindingDescription() {
 		return vk::VertexInputBindingDescription{
@@ -18,7 +19,7 @@ struct Vertex {
 	}
 
 	static auto GetAttributeDescriptions() {
-		return std::array<vk::VertexInputAttributeDescription, 2>{
+		return std::array<vk::VertexInputAttributeDescription, 3>{
 		    vk::VertexInputAttributeDescription{
 		        .location = 0,
 		        .binding  = 0,
@@ -30,6 +31,12 @@ struct Vertex {
 		        .binding  = 0,
 		        .format   = vk::Format::eR32G32B32Sfloat,
 		        .offset   = offsetof(Vertex, color),
+		    },
+		    vk::VertexInputAttributeDescription{
+		        .location = 2,
+		        .binding  = 0,
+		        .format   = vk::Format::eR32G32Sfloat,
+		        .offset   = offsetof(Vertex, texCoord),
 		    },
 		};
 	}
@@ -89,6 +96,7 @@ private:
 	std::unique_ptr<dubu::gfx::Framebuffer>         mFramebuffer         = {};
 	std::unique_ptr<dubu::gfx::CommandPool>         mCommandPool         = {};
 	std::unique_ptr<dubu::gfx::Image>               mTextureImage        = {};
+	std::unique_ptr<dubu::gfx::Sampler>             mTextureSampler      = {};
 	std::unique_ptr<dubu::gfx::Buffer>              mVertexBuffer        = {};
 	std::unique_ptr<dubu::gfx::Buffer>              mIndexBuffer         = {};
 	std::vector<std::unique_ptr<dubu::gfx::Buffer>> mUniformBuffers      = {};

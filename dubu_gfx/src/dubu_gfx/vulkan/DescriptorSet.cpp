@@ -13,26 +13,12 @@ DescriptorSet::DescriptorSet(const CreateInfo& createInfo)
 }
 
 void DescriptorSet::UpdateDescriptorSets(
-    const std::vector<vk::Buffer>& buffers) {
-	for (std::size_t i = 0; i < mDescriptorSets.size(); ++i) {
-		vk::DescriptorBufferInfo bufferInfo{
-		    .buffer = buffers[i],
-		    .offset = 0,
-		    .range  = VK_WHOLE_SIZE,
-		};
-		mCreateInfo.device.updateDescriptorSets(
-		    {
-		        vk::WriteDescriptorSet{
-		            .dstSet          = *mDescriptorSets[i],
-		            .dstBinding      = 0,
-		            .dstArrayElement = 0,
-		            .descriptorCount = 1,
-		            .descriptorType  = vk::DescriptorType::eUniformBuffer,
-		            .pBufferInfo     = &bufferInfo,
-		        },
-		    },
-		    {});
+    std::size_t index, std::vector<vk::WriteDescriptorSet>& descriptorWrites) {
+	for (auto& descriptorWrite : descriptorWrites) {
+		descriptorWrite.dstSet = *mDescriptorSets[index];
 	}
+
+	mCreateInfo.device.updateDescriptorSets(descriptorWrites, {});
 }
 
 }  // namespace dubu::gfx
