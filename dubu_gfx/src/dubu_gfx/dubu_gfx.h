@@ -14,6 +14,7 @@
 #include "vulkan/DynamicState.h"
 #include "vulkan/Framebuffer.h"
 #include "vulkan/GraphicsPipeline.h"
+#include "vulkan/Image.h"
 #include "vulkan/Instance.h"
 #include "vulkan/RenderPass.h"
 #include "vulkan/Shader.h"

@@ -16,29 +16,23 @@ Buffer::Buffer(const CreateInfo& createInfo)
 	auto memRequirements =
 	    createInfo.device.getBufferMemoryRequirements(*mBuffer);
 
-	mMemory = createInfo.device.allocateMemoryUnique(vk::MemoryAllocateInfo{
-	    .allocationSize  = memRequirements.size,
-	    .memoryTypeIndex = *FindMemoryType(memRequirements.memoryTypeBits,
-	                                       createInfo.memoryProperties),
+	mMemory = std::make_unique<DeviceMemory>(DeviceMemory::CreateInfo{
+	    .device           = createInfo.device,
+	    .physicalDevice   = createInfo.physicalDevice,
+	    .allocationSize   = memRequirements.size,
+	    .typeFilter       = memRequirements.memoryTypeBits,
+	    .memoryProperties = createInfo.memoryProperties,
 	});
 
-	createInfo.device.bindBufferMemory(*mBuffer, *mMemory, 0);
+	createInfo.device.bindBufferMemory(*mBuffer, mMemory->GetDeviceMemory(), 0);
 }
 
 void Buffer::SetData(const void* bytes, std::size_t numBytes) {
-	void* data;
-
-	auto result = mCreateInfo.device.mapMemory(
-	    *mMemory, 0, numBytes, vk::MemoryMapFlagBits(0), &data);
-
-	if (result != vk::Result::eSuccess) {
-		DUBU_LOG_ERROR("Failed to map memory!");
-		return;
-	}
+	void* data = mMemory->Map(numBytes);
 
 	std::memcpy(data, bytes, numBytes);
 
-	mCreateInfo.device.unmapMemory(*mMemory);
+	mMemory->Unmap();
 }
 
 void Buffer::SetData(const vk::Buffer&         buffer,
@@ -72,23 +66,6 @@ void Buffer::SetData(const vk::Buffer&         buffer,
 	    .pCommandBuffers    = &commandBuffer.GetCommandBuffer(0),
 	}});
 	graphicsQueue.waitIdle();
-}
-
-std::optional<uint32_t> Buffer::FindMemoryType(
-    uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-	auto memProperties = mCreateInfo.physicalDevice.getMemoryProperties();
-
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
-		if (typeFilter & (1 << i) &&
-		    (memProperties.memoryTypes[i].propertyFlags & properties) ==
-		        properties) {
-			return i;
-		}
-	}
-
-	DUBU_LOG_FATAL("Failed to find suitable memory type!");
-
-	return std::nullopt;
 }
 
 }  // namespace dubu::gfx

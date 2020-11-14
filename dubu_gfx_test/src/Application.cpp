@@ -8,6 +8,9 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/imgui.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 constexpr uint32_t WIDTH                = 1600;
 constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
@@ -24,6 +27,7 @@ dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
 	if (!file.is_open()) {
+		DUBU_LOG_ERROR("Failed to open file: {}", filepath);
 		return {};
 	}
 
@@ -109,6 +113,7 @@ void Application::InitFramework() {
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
 	CreateCommandPool();
+	CreateTextureImage();
 	CreateVertexBuffer();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
@@ -600,6 +605,81 @@ void Application::CreateCommandPool() {
 	        .device        = mDevice->GetDevice(),
 	        .queueFamilies = mDevice->GetQueueFamilies(),
 	    });
+}
+
+void Application::CreateTextureImage() {
+	const std::filesystem::path imagePath = "assets/textures/texture.jpg";
+
+	glm::ivec2 textureSize;
+	int        textureChannels;
+	auto       blob = ReadFile(imagePath);
+	stbi_uc*   pixels =
+	    stbi_load_from_memory(reinterpret_cast<stbi_uc*>(blob.data()),
+	                          static_cast<int>(blob.size()),
+	                          &textureSize.x,
+	                          &textureSize.y,
+	                          &textureChannels,
+	                          STBI_rgb_alpha);
+	uint32_t imageSize = textureSize.x * textureSize.y * 4;
+
+	if (!pixels) {
+		DUBU_LOG_FATAL("Failed to load texure image: {}", imagePath);
+	}
+
+	dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
+	    .device           = mDevice->GetDevice(),
+	    .physicalDevice   = mDevice->GetPhysicalDevice(),
+	    .size             = imageSize,
+	    .usage            = vk::BufferUsageFlagBits::eTransferSrc,
+	    .sharingMode      = vk::SharingMode::eExclusive,
+	    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+	                        vk::MemoryPropertyFlagBits::eHostCoherent,
+	});
+
+	stagingBuffer.SetData(pixels, static_cast<std::size_t>(imageSize));
+
+	stbi_image_free(pixels);
+
+	mTextureImage =
+	    std::make_unique<dubu::gfx::Image>(dubu::gfx::Image::CreateInfo{
+	        .device         = mDevice->GetDevice(),
+	        .physicalDevice = mDevice->GetPhysicalDevice(),
+	        .imageInfo =
+	            {
+	                .imageType = vk::ImageType::e2D,
+	                .format    = vk::Format::eR8G8B8A8Srgb,
+	                .extent =
+	                    {
+	                        .width  = static_cast<uint32_t>(textureSize.x),
+	                        .height = static_cast<uint32_t>(textureSize.y),
+	                        .depth  = 1,
+	                    },
+	                .mipLevels   = 1,
+	                .arrayLayers = 1,
+	                .samples     = vk::SampleCountFlagBits::e1,
+	                .tiling      = vk::ImageTiling::eOptimal,
+	                .usage       = vk::ImageUsageFlagBits::eTransferDst |
+	                         vk::ImageUsageFlagBits::eSampled,
+	                .sharingMode   = vk::SharingMode::eExclusive,
+	                .initialLayout = vk::ImageLayout::eUndefined,
+	            },
+	        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
+	    });
+
+	mTextureImage->TransitionImageLayout(vk::ImageLayout::eUndefined,
+	                                     vk::ImageLayout::eTransferDstOptimal,
+	                                     mDevice->GetQueueFamilies(),
+	                                     mDevice->GetGraphicsQueue());
+	mTextureImage->SetData(stagingBuffer.GetBuffer(),
+	                       mDevice->GetQueueFamilies(),
+	                       mDevice->GetGraphicsQueue(),
+	                       static_cast<uint32_t>(textureSize.x),
+	                       static_cast<uint32_t>(textureSize.y));
+	mTextureImage->TransitionImageLayout(
+	    vk::ImageLayout::eTransferDstOptimal,
+	    vk::ImageLayout::eShaderReadOnlyOptimal,
+	    mDevice->GetQueueFamilies(),
+	    mDevice->GetGraphicsQueue());
 }
 
 void Application::CreateVertexBuffer() {
