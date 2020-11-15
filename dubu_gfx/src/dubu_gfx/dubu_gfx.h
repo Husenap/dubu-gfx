@@ -16,6 +16,7 @@
 #include "vulkan/GraphicsPipeline.h"
 #include "vulkan/Image.h"
 #include "vulkan/Instance.h"
+#include "vulkan/QueueFamilyIndices.h"
 #include "vulkan/RenderPass.h"
 #include "vulkan/Sampler.h"
 #include "vulkan/Shader.h"

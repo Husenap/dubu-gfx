@@ -7,42 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-
-	static auto GetBindingDescription() {
-		return vk::VertexInputBindingDescription{
-		    .binding   = 0,
-		    .stride    = sizeof(Vertex),
-		    .inputRate = vk::VertexInputRate::eVertex,
-		};
-	}
-
-	static auto GetAttributeDescriptions() {
-		return std::array<vk::VertexInputAttributeDescription, 3>{
-		    vk::VertexInputAttributeDescription{
-		        .location = 0,
-		        .binding  = 0,
-		        .format   = vk::Format::eR32G32B32Sfloat,
-		        .offset   = offsetof(Vertex, pos),
-		    },
-		    vk::VertexInputAttributeDescription{
-		        .location = 1,
-		        .binding  = 0,
-		        .format   = vk::Format::eR32G32B32Sfloat,
-		        .offset   = offsetof(Vertex, color),
-		    },
-		    vk::VertexInputAttributeDescription{
-		        .location = 2,
-		        .binding  = 0,
-		        .format   = vk::Format::eR32G32Sfloat,
-		        .offset   = offsetof(Vertex, texCoord),
-		    },
-		};
-	}
-};
+#include "Model.h"
 
 struct UniformBufferObject {
 	glm::mat4 model;
@@ -78,7 +43,7 @@ private:
 	void CreateCommandPool();
 	void CreateDepthResources();
 	void CreateTextureImage();
-	void CreateVertexBuffer();
+	void CreateModel();
 	void CreateUniformBuffers();
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
@@ -99,10 +64,9 @@ private:
 	std::unique_ptr<dubu::gfx::Framebuffer>         mFramebuffer         = {};
 	std::unique_ptr<dubu::gfx::CommandPool>         mCommandPool         = {};
 	std::unique_ptr<dubu::gfx::Image>               mDepthImage          = {};
+	std::unique_ptr<Model>                          mModel               = {};
 	std::unique_ptr<dubu::gfx::Image>               mTextureImage        = {};
 	std::unique_ptr<dubu::gfx::Sampler>             mTextureSampler      = {};
-	std::unique_ptr<dubu::gfx::Buffer>              mVertexBuffer        = {};
-	std::unique_ptr<dubu::gfx::Buffer>              mIndexBuffer         = {};
 	std::vector<std::unique_ptr<dubu::gfx::Buffer>> mUniformBuffers      = {};
 	std::unique_ptr<dubu::gfx::DescriptorPool>      mDescriptorPool      = {};
 	std::unique_ptr<dubu::gfx::DescriptorSet>       mDescriptorSet       = {};
