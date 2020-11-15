@@ -75,9 +75,9 @@ Mesh::Mesh(const CreateInfo& createInfo) {
 
 Model::Model(const CreateInfo& createInfo) {
 	Assimp::Importer importer;
-	const aiScene*   scene =
-	    importer.ReadFile(createInfo.filepath.string().c_str(),
-	                      aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
+	const aiScene*   scene = importer.ReadFile(
+        createInfo.filepath.string().c_str(),
+        aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
 
 	for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
 		aiMesh* mesh = scene->mMeshes[i];
@@ -90,7 +90,7 @@ Model::Model(const CreateInfo& createInfo) {
 		};
 
 		meshInfo.vertices.resize(mesh->mNumVertices);
-		meshInfo.indices.resize(mesh->mNumVertices * 3);
+		meshInfo.indices.resize(mesh->mNumFaces * 3);
 
 		for (unsigned int vertexIndex = 0; vertexIndex < mesh->mNumVertices;
 		     ++vertexIndex) {

@@ -297,9 +297,9 @@ void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 
 	UniformBufferObject ubo{
 	    .model      = glm::rotate(glm::mat4(1.f),
-                             time * glm::radians(90.f),
+                             -(std::cosf(time) * 0.5f + 0.5f) * glm::radians(90.f),
                              glm::vec3(0.f, 1.f, 0.f)),
-	    .view       = glm::lookAt(glm::vec3(0.f, 1.1f + std::cos(time), 2.f),
+	    .view       = glm::lookAt(glm::vec3(0.f, 1.f+std::sinf(time*0.25f), 3.f),
                             glm::vec3(0.f, 0.f, 0.f),
                             glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
@@ -671,7 +671,7 @@ void Application::CreateDepthResources() {
 }
 
 void Application::CreateTextureImage() {
-	const std::filesystem::path imagePath = "assets/models/viking_room.png";
+	const std::filesystem::path imagePath = "assets/models/backpack/1001_albedo.jpg";
 
 	glm::ivec2 textureSize;
 	int        textureChannels;
@@ -760,7 +760,7 @@ void Application::CreateModel() {
 	                      .physicalDevice = mDevice->GetPhysicalDevice(),
 	                      .queueFamilies  = mDevice->GetQueueFamilies(),
 	                      .graphicsQueue  = mDevice->GetGraphicsQueue(),
-	                      .filepath       = "assets/models/viking_room.obj"});
+	                      .filepath       = "assets/models/backpack/backpack.fbx"});
 }
 
 void Application::CreateUniformBuffers() {
