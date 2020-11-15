@@ -185,6 +185,7 @@ void Application::InitImGui() {
 	    .MinImageCount   = mFramebuffer->GetFramebufferCount(),
 	    .ImageCount      = mFramebuffer->GetFramebufferCount(),
 	    .MSAASamples     = VK_SAMPLE_COUNT_1_BIT,
+	    .Allocator       = nullptr,
 	    .CheckVkResultFn = CheckVkResult,
 	};
 	ImGui_ImplVulkan_Init(&initInfo, mRenderPass->GetRenderPass());
