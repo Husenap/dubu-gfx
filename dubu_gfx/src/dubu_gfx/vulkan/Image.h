@@ -12,6 +12,7 @@ public:
 		vk::PhysicalDevice      physicalDevice   = {};
 		vk::ImageCreateInfo     imageInfo        = {};
 		vk::MemoryPropertyFlags memoryProperties = {};
+		vk::ImageAspectFlags    aspectMask       = {};
 	};
 
 public:
@@ -31,6 +32,9 @@ public:
 	[[nodiscard]] const vk::Image&     GetImage() const { return *mImage; }
 	[[nodiscard]] const vk::ImageView& GetImageView() const {
 		return *mImageView;
+	}
+	[[nodiscard]] vk::Format GetFormat() const {
+		return mCreateInfo.imageInfo.format;
 	}
 
 private:

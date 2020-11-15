@@ -29,7 +29,7 @@ Image::Image(const CreateInfo& createInfo)
 	        .format   = createInfo.imageInfo.format,
 	        .subresourceRange =
 	            {
-	                .aspectMask     = vk::ImageAspectFlagBits::eColor,
+	                .aspectMask     = createInfo.aspectMask,
 	                .baseMipLevel   = 0,
 	                .levelCount     = 1,
 	                .baseArrayLayer = 0,
@@ -63,19 +63,18 @@ void Image::SetData(const vk::Buffer&         buffer,
 	    *mImage,
 	    vk::ImageLayout::eTransferDstOptimal,
 	    {
-	        vk::BufferImageCopy{
-	            .bufferOffset      = 0,
-	            .bufferRowLength   = 0,
-	            .bufferImageHeight = 0,
-	            .imageSubresource =
-	                {
-	                    .aspectMask     = vk::ImageAspectFlagBits::eColor,
-	                    .mipLevel       = 0,
-	                    .baseArrayLayer = 0,
-	                    .layerCount     = 1,
-	                },
-	            .imageOffset = {0, 0, 0},
-	            .imageExtent = {width, height, 1}},
+	        vk::BufferImageCopy{.bufferOffset      = 0,
+	                            .bufferRowLength   = 0,
+	                            .bufferImageHeight = 0,
+	                            .imageSubresource =
+	                                {
+	                                    .aspectMask = mCreateInfo.aspectMask,
+	                                    .mipLevel   = 0,
+	                                    .baseArrayLayer = 0,
+	                                    .layerCount     = 1,
+	                                },
+	                            .imageOffset = {0, 0, 0},
+	                            .imageExtent = {width, height, 1}},
 	    });
 
 	commandBuffer.GetCommandBuffer(0).end();
@@ -123,7 +122,15 @@ void Image::TransitionImageLayout(vk::ImageLayout           oldLayout,
 		destinationAccess = vk::AccessFlagBits::eShaderRead;
 		sourceStage       = vk::PipelineStageFlagBits::eTransfer;
 		destinationStage  = vk::PipelineStageFlagBits::eFragmentShader;
+	} else if (oldLayout == vk::ImageLayout::eUndefined &&
+	           newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+		sourceAccess      = {};
+		destinationAccess = vk::AccessFlagBits::eDepthStencilAttachmentRead |
+		                    vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		sourceStage      = vk::PipelineStageFlagBits::eTopOfPipe;
+		destinationStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 	}
+
 	commandBuffer.GetCommandBuffer(0).pipelineBarrier(
 	    sourceStage,
 	    destinationStage,
@@ -140,7 +147,7 @@ void Image::TransitionImageLayout(vk::ImageLayout           oldLayout,
 	        .image               = *mImage,
 	        .subresourceRange =
 	            {
-	                .aspectMask     = vk::ImageAspectFlagBits::eColor,
+	                .aspectMask     = mCreateInfo.aspectMask,
 	                .baseMipLevel   = 0,
 	                .levelCount     = 1,
 	                .baseArrayLayer = 0,

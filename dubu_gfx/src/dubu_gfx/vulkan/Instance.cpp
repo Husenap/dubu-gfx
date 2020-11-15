@@ -11,7 +11,13 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
               const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
               void*) {
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-		DUBU_LOG_ERROR("Validation Layer: {}", callbackData->pMessage);
+		std::string message = callbackData->pMessage;
+		message             = message.substr(message.find("MessageID"));
+		message             = message.substr(message.find("|") + 2);
+		DUBU_LOG_ERROR("Validation Error[{:#x} {}]:\n{}",
+		               static_cast<uint32_t>(callbackData->messageIdNumber),
+		               callbackData->pMessageIdName,
+		               message);
 	}
 
 	return VK_FALSE;

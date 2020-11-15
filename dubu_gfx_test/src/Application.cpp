@@ -21,8 +21,13 @@ const std::vector<Vertex> VERTICES = {
     {{+1.0f, 0.0f, -1.0f}, {0.996f, 0.592f, 0.643f}, {1.f, 0.f}},
     {{+1.0f, 0.0f, +1.0f}, {1.000f, 0.373f, 0.635f}, {1.f, 1.f}},
     {{-1.0f, 0.0f, +1.0f}, {0.996f, 0.592f, 0.643f}, {0.f, 1.f}},
+
+    {{-1.0f, -1.0f, -1.0f}, {0.988f, 0.812f, 0.651f}, {0.f, 0.f}},
+    {{+1.0f, -1.0f, -1.0f}, {0.996f, 0.592f, 0.643f}, {1.f, 0.f}},
+    {{+1.0f, -1.0f, +1.0f}, {1.000f, 0.373f, 0.635f}, {1.f, 1.f}},
+    {{-1.0f, -1.0f, +1.0f}, {0.996f, 0.592f, 0.643f}, {0.f, 1.f}},
 };
-const std::vector<uint16_t> INDICES = {0, 1, 2, 0, 2, 3};
+const std::vector<uint16_t> INDICES = {0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7};
 
 dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
@@ -109,6 +114,7 @@ void Application::InitFramework() {
 	CreateSurface();
 	CreateDevice();
 	CreateSwapchain();
+	CreateDepthResources();
 	CreateRenderPass();
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
@@ -237,9 +243,11 @@ void Application::RecreateSwapchain() {
 	mGraphicsPipeline.reset();
 	mPipelineLayout.reset();
 	mRenderPass.reset();
+	mDepthImage.reset();
 	mSwapchain.reset();
 
 	CreateSwapchain();
+	CreateDepthResources();
 	CreateRenderPass();
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
@@ -260,8 +268,12 @@ void Application::RecordCommands(uint32_t imageIndex) {
 	            .framebuffers = mFramebuffer->GetFramebuffers(),
 	            .renderArea   = {.offset = {0, 0},
                                .extent = mSwapchain->GetExtent()},
-	            .clearColor   = vk::ClearColorValue(
-                    std::array<float, 4>{0.f, 0.f, 0.f, 1.f}),
+	            .clearValues =
+	                {
+	                    vk::ClearColorValue(
+	                        std::array<float, 4>{0.f, 0.f, 0.f, 1.f}),
+	                    vk::ClearDepthStencilValue{.depth = 1.f},
+	                },
 	        },
 
 	        dubu::gfx::DrawingCommands::BindPipeline{
@@ -312,11 +324,11 @@ void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 	    .model      = glm::rotate(glm::mat4(1.f),
                              time * glm::radians(90.f),
                              glm::vec3(0.f, 1.f, 0.f)),
-	    .view       = glm::lookAt(glm::vec3(0.f, 2.f + std::cos(time), 2.f),
-                            glm::vec3(0.f, 0.f, 0.f),
+	    .view       = glm::lookAt(glm::vec3(0.f, 1.1f + std::cos(time), 2.f),
+                            glm::vec3(0.f, -0.5f, 0.f),
                             glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
-	        glm::radians(45.f),
+	        glm::radians(60.f),
 	        static_cast<float>(mSwapchain->GetExtent().width) /
 	            static_cast<float>(mSwapchain->GetExtent().height),
 	        0.1f,
@@ -466,19 +478,37 @@ void Application::CreateSwapchain() {
 void Application::CreateRenderPass() {
 	mRenderPass = std::make_unique<dubu::gfx::RenderPass>(
 	    dubu::gfx::RenderPass::CreateInfo{
-	        .device      = mDevice->GetDevice(),
-	        .attachments = {{
-	            .format          = mSwapchain->GetImageFormat(),
-	            .samples         = vk::SampleCountFlagBits::e1,
-	            .loadOp          = vk::AttachmentLoadOp::eClear,
-	            .storeOp         = vk::AttachmentStoreOp::eStore,
-	            .stencilLoadOp   = vk::AttachmentLoadOp::eDontCare,
-	            .stencilStoreOp  = vk::AttachmentStoreOp::eDontCare,
-	            .initialLayout   = vk::ImageLayout::eUndefined,
-	            .finalLayout     = vk::ImageLayout::ePresentSrcKHR,
-	            .referenceLayout = vk::ImageLayout::eColorAttachmentOptimal,
+	        .device = mDevice->GetDevice(),
+	        .attachments =
+	            {{
+	                 .format         = mSwapchain->GetImageFormat(),
+	                 .samples        = vk::SampleCountFlagBits::e1,
+	                 .loadOp         = vk::AttachmentLoadOp::eClear,
+	                 .storeOp        = vk::AttachmentStoreOp::eStore,
+	                 .stencilLoadOp  = vk::AttachmentLoadOp::eDontCare,
+	                 .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+	                 .initialLayout  = vk::ImageLayout::eUndefined,
+	                 .finalLayout    = vk::ImageLayout::ePresentSrcKHR,
+	                 .referenceLayout =
+	                     vk::ImageLayout::eColorAttachmentOptimal,
+	             },
+	             {
+	                 .format         = mDepthImage->GetFormat(),
+	                 .samples        = vk::SampleCountFlagBits::e1,
+	                 .loadOp         = vk::AttachmentLoadOp::eClear,
+	                 .storeOp        = vk::AttachmentStoreOp::eDontCare,
+	                 .stencilLoadOp  = vk::AttachmentLoadOp::eDontCare,
+	                 .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+	                 .initialLayout  = vk::ImageLayout::eUndefined,
+	                 .finalLayout    = vk::ImageLayout::eDepthStencilAttachmentOptimal,
+	                 .referenceLayout =
+	                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
+	             }},
+	        .subpasses = {{
+	            .bindPoint              = vk::PipelineBindPoint::eGraphics,
+	            .colorAttachmentIndices = {0},
+	            .depthAttachmentIndex   = 1,
 	        }},
-	        .subpasses   = {{vk::PipelineBindPoint::eGraphics, {0}}},
 	    });
 }
 
@@ -563,6 +593,14 @@ void Application::CreateGraphicsPipeline() {
 	    .sampleShadingEnable  = VK_FALSE,
 	};
 
+	vk::PipelineDepthStencilStateCreateInfo depthStencilInfo{
+	    .depthTestEnable       = VK_TRUE,
+	    .depthWriteEnable      = VK_TRUE,
+	    .depthCompareOp        = vk::CompareOp::eLess,
+	    .depthBoundsTestEnable = VK_FALSE,
+	    .stencilTestEnable     = VK_FALSE,
+	};
+
 	vk::PipelineColorBlendAttachmentState colorBlendAttachement{
 	    .blendEnable = VK_FALSE,
 	    .colorWriteMask =
@@ -594,6 +632,7 @@ void Application::CreateGraphicsPipeline() {
 	        .viewportState      = mViewportState->GetViewportState(),
 	        .rasterizationState = rasterizerInfo,
 	        .multisampleState   = multisampleInfo,
+	        .depthStencilState  = depthStencilInfo,
 	        .colorBlendState    = colorBlendInfo,
 	        .dynamicState       = dynamicState.GetDynamicState(),
 	        .pipelineLayout     = *mPipelineLayout,
@@ -605,10 +644,11 @@ void Application::CreateGraphicsPipeline() {
 void Application::CreateFramebuffer() {
 	mFramebuffer = std::make_unique<dubu::gfx::Framebuffer>(
 	    dubu::gfx::Framebuffer::CreateInfo{
-	        .device     = mDevice->GetDevice(),
-	        .renderPass = mRenderPass->GetRenderPass(),
-	        .imageViews = mSwapchain->GetImageViews(),
-	        .extent     = mSwapchain->GetExtent(),
+	        .device         = mDevice->GetDevice(),
+	        .renderPass     = mRenderPass->GetRenderPass(),
+	        .imageViews     = mSwapchain->GetImageViews(),
+	        .depthImageView = mDepthImage->GetImageView(),
+	        .extent         = mSwapchain->GetExtent(),
 	    });
 }
 
@@ -618,6 +658,39 @@ void Application::CreateCommandPool() {
 	        .device        = mDevice->GetDevice(),
 	        .queueFamilies = mDevice->GetQueueFamilies(),
 	    });
+}
+
+void Application::CreateDepthResources() {
+	mDepthImage =
+	    std::make_unique<dubu::gfx::Image>(dubu::gfx::Image::CreateInfo{
+	        .device         = mDevice->GetDevice(),
+	        .physicalDevice = mDevice->GetPhysicalDevice(),
+	        .imageInfo =
+	            {
+	                .imageType = vk::ImageType::e2D,
+	                .format    = vk::Format::eD32Sfloat,
+	                .extent =
+	                    {
+	                        .width  = mSwapchain->GetExtent().width,
+	                        .height = mSwapchain->GetExtent().height,
+	                        .depth  = 1,
+	                    },
+	                .mipLevels   = 1,
+	                .arrayLayers = 1,
+	                .samples     = vk::SampleCountFlagBits::e1,
+	                .tiling      = vk::ImageTiling::eOptimal,
+	                .usage = vk::ImageUsageFlagBits::eDepthStencilAttachment,
+	                .sharingMode   = vk::SharingMode::eExclusive,
+	                .initialLayout = vk::ImageLayout::eUndefined,
+	            },
+	        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
+	        .aspectMask       = vk::ImageAspectFlagBits::eDepth,
+	    });
+
+	mDepthImage->TransitionImageLayout(vk::ImageLayout::eUndefined,
+	                                   vk::ImageLayout::eDepthStencilAttachmentOptimal,
+	                                   mDevice->GetQueueFamilies(),
+	                                   mDevice->GetGraphicsQueue());
 }
 
 void Application::CreateTextureImage() {
@@ -678,6 +751,7 @@ void Application::CreateTextureImage() {
 	                .initialLayout = vk::ImageLayout::eUndefined,
 	            },
 	        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
+	        .aspectMask       = vk::ImageAspectFlagBits::eColor,
 	    });
 
 	mTextureImage->TransitionImageLayout(vk::ImageLayout::eUndefined,
