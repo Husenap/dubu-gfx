@@ -11,7 +11,7 @@ struct BeginRenderPass {
 	vk::RenderPass               renderPass   = {};
 	std::vector<vk::Framebuffer> framebuffers = {};
 	vk::Rect2D                   renderArea   = {};
-	vk::ClearValue               clearColor   = {};
+	std::vector<vk::ClearValue>  clearValues  = {};
 };
 struct EndRenderPass {};
 
@@ -54,7 +54,7 @@ struct DrawIndexed {
 	uint32_t indexCount    = {};
 	uint32_t instanceCount = {};
 	uint32_t firstIndex    = {};
-	int32_t vertexOffset  = {};
+	int32_t  vertexOffset  = {};
 	uint32_t firstInstance = {};
 };
 

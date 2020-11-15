@@ -15,13 +15,32 @@ public:
 		vk::ImageLayout                initialLayout   = {};
 		vk::ImageLayout                finalLayout     = {};
 		vk::ImageLayout                referenceLayout = {};
+
+		[[nodiscard]] vk::AttachmentDescription ToVulkanStruct() const {
+			return vk::AttachmentDescription{
+			    .flags          = flags,
+			    .format         = format,
+			    .samples        = samples,
+			    .loadOp         = loadOp,
+			    .storeOp        = storeOp,
+			    .stencilLoadOp  = stencilLoadOp,
+			    .stencilStoreOp = stencilStoreOp,
+			    .initialLayout  = initialLayout,
+			    .finalLayout    = finalLayout,
+			};
+		}
+	};
+
+	struct SubpassDescription {
+		vk::PipelineBindPoint      bindPoint              = {};
+		std::vector<std::size_t>   colorAttachmentIndices = {};
+		std::optional<std::size_t> depthAttachmentIndex   = {};
 	};
 
 	struct CreateInfo {
 		vk::Device                         device      = {};
 		std::vector<AttachmentDescription> attachments = {};
-		std::vector<std::tuple<vk::PipelineBindPoint, std::vector<std::size_t>>>
-		    subpasses = {};
+		std::vector<SubpassDescription>    subpasses   = {};
 	};
 
 public:

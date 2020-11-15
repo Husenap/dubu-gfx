@@ -13,8 +13,8 @@ void DrawingCommandVisitor::operator()(
 	        .renderPass      = cmd.renderPass,
 	        .framebuffer     = cmd.framebuffers[mCommandBufferIndex],
 	        .renderArea      = cmd.renderArea,
-	        .clearValueCount = 1,
-	        .pClearValues    = &cmd.clearColor,
+	        .clearValueCount = static_cast<uint32_t>(cmd.clearValues.size()),
+	        .pClearValues    = cmd.clearValues.data(),
 	    },
 	    vk::SubpassContents::eInline);
 }

@@ -2,6 +2,8 @@
 
 #include <dubu_gfx/dubu_gfx.h>
 #include <dubu_window/dubu_window.h>
+
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -74,6 +76,7 @@ private:
 	void CreateGraphicsPipeline();
 	void CreateFramebuffer();
 	void CreateCommandPool();
+	void CreateDepthResources();
 	void CreateTextureImage();
 	void CreateVertexBuffer();
 	void CreateUniformBuffers();
@@ -95,6 +98,7 @@ private:
 	std::unique_ptr<dubu::gfx::GraphicsPipeline>    mGraphicsPipeline    = {};
 	std::unique_ptr<dubu::gfx::Framebuffer>         mFramebuffer         = {};
 	std::unique_ptr<dubu::gfx::CommandPool>         mCommandPool         = {};
+	std::unique_ptr<dubu::gfx::Image>               mDepthImage          = {};
 	std::unique_ptr<dubu::gfx::Image>               mTextureImage        = {};
 	std::unique_ptr<dubu::gfx::Sampler>             mTextureSampler      = {};
 	std::unique_ptr<dubu::gfx::Buffer>              mVertexBuffer        = {};

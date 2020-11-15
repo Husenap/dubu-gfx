@@ -5,10 +5,11 @@ namespace dubu::gfx {
 class Framebuffer {
 public:
 	struct CreateInfo {
-		vk::Device                 device     = {};
-		vk::RenderPass             renderPass = {};
-		std::vector<vk::ImageView> imageViews = {};
-		vk::Extent2D               extent     = {};
+		vk::Device                   device         = {};
+		vk::RenderPass               renderPass     = {};
+		std::vector<vk::ImageView>   imageViews     = {};
+		std::optional<vk::ImageView> depthImageView = {};
+		vk::Extent2D                 extent         = {};
 	};
 
 public:
