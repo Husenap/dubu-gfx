@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 
@@ -310,7 +311,7 @@ void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 	    .model      = glm::rotate(glm::mat4(1.f),
                              time * glm::radians(90.f),
                              glm::vec3(0.f, 1.f, 0.f)),
-	    .view       = glm::lookAt(glm::vec3(0.f, 2.f + std::cosf(time), 2.f),
+	    .view       = glm::lookAt(glm::vec3(0.f, 2.f + std::cos(time), 2.f),
                             glm::vec3(0.f, 0.f, 0.f),
                             glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
