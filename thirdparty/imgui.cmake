@@ -32,7 +32,7 @@ if(NOT imgui_POPULATED)
 
     add_library(imgui STATIC ${src_imgui})
 
-    target_include_directories(imgui PUBLIC
+    target_include_directories(imgui SYSTEM PUBLIC 
         "${imgui_SOURCE_DIR}"
         "${imgui_SOURCE_DIR}/..")
 

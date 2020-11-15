@@ -24,6 +24,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     include("thirdparty/dubu_window.cmake")
     include("thirdparty/imgui.cmake")
     include("thirdparty/glm.cmake")
+    include("thirdparty/stb.cmake")
     add_subdirectory("dubu_gfx_test")
 endif()
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DeviceMemory.h"
 #include "QueueFamilyIndices.h"
 
 namespace dubu::gfx {
@@ -37,13 +38,10 @@ public:
 	[[nodiscard]] const vk::Buffer& GetBuffer() const { return *mBuffer; }
 
 private:
-	std::optional<uint32_t> FindMemoryType(uint32_t                typeFilter,
-	                                       vk::MemoryPropertyFlags properties);
-
 	CreateInfo mCreateInfo;
 
-	vk::UniqueBuffer       mBuffer;
-	vk::UniqueDeviceMemory mMemory;
+	vk::UniqueBuffer              mBuffer;
+	std::unique_ptr<DeviceMemory> mMemory;
 };
 
 }  // namespace dubu::gfx

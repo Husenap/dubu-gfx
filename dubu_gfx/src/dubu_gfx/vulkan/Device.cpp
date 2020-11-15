@@ -91,7 +91,9 @@ void Device::CreateLogicalDevice() {
 		});
 	}
 
-	vk::PhysicalDeviceFeatures deviceFeatures{};
+	vk::PhysicalDeviceFeatures deviceFeatures{
+	    .samplerAnisotropy = VK_TRUE,
+	};
 
 	vk::DeviceCreateInfo deviceCreateInfo{
 	    .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),

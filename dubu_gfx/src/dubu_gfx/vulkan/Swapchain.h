@@ -19,7 +19,7 @@ public:
 
 	[[nodiscard]] vk::Format GetImageFormat() const { return mImageFormat; }
 	[[nodiscard]] const vk::Extent2D& GetExtent() const { return mExtent; }
-	[[nodiscard]] const std::size_t   GetImageCount() const {
+	[[nodiscard]] std::size_t         GetImageCount() const {
         return mImageViews.size();
 	}
 	[[nodiscard]] const std::vector<vk::ImageView>& GetImageViews() const {

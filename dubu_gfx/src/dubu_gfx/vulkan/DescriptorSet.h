@@ -14,7 +14,9 @@ public:
 public:
 	DescriptorSet(const CreateInfo& createInfo);
 
-	void UpdateDescriptorSets(const std::vector<vk::Buffer>& buffers);
+	void UpdateDescriptorSets(
+	    std::size_t                          index,
+	    std::vector<vk::WriteDescriptorSet>& descriptorWrites);
 
 	[[nodiscard]] const vk::DescriptorSet& GetDescriptorSet(std::size_t index) {
 		return *mDescriptorSets[index];

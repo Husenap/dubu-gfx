@@ -11,7 +11,8 @@ target_link_libraries(${target_name}
     dubu_window
     dubu_gfx
     imgui
-    glm)
+    glm
+    stb)
 
 set_target_properties(${target_name} PROPERTIES
     FOLDER ${${PROJECT_NAME}_FOLDER}/test

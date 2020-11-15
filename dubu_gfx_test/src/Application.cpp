@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 
@@ -8,15 +9,18 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/imgui.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 constexpr uint32_t WIDTH                = 1600;
 constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<Vertex> VERTICES = {
-    {{-0.5f, 0.0f, -0.5f}, {0.988f, 0.812f, 0.651f}},
-    {{+0.5f, 0.0f, -0.5f}, {0.996f, 0.592f, 0.643f}},
-    {{+0.5f, 0.0f, +0.5f}, {1.000f, 0.373f, 0.635f}},
-    {{-0.5f, 0.0f, +0.5f}, {0.996f, 0.592f, 0.643f}},
+    {{-1.0f, 0.0f, -1.0f}, {0.988f, 0.812f, 0.651f}, {0.f, 0.f}},
+    {{+1.0f, 0.0f, -1.0f}, {0.996f, 0.592f, 0.643f}, {1.f, 0.f}},
+    {{+1.0f, 0.0f, +1.0f}, {1.000f, 0.373f, 0.635f}, {1.f, 1.f}},
+    {{-1.0f, 0.0f, +1.0f}, {0.996f, 0.592f, 0.643f}, {0.f, 1.f}},
 };
 const std::vector<uint16_t> INDICES = {0, 1, 2, 0, 2, 3};
 
@@ -24,6 +28,7 @@ dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
 	if (!file.is_open()) {
+		DUBU_LOG_ERROR("Failed to open file: {}", filepath);
 		return {};
 	}
 
@@ -109,6 +114,7 @@ void Application::InitFramework() {
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
 	CreateCommandPool();
+	CreateTextureImage();
 	CreateVertexBuffer();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
@@ -178,6 +184,8 @@ void Application::InitImGui() {
 	    .DescriptorPool  = mImGuiDescriptorPool->GetDescriptorPool(),
 	    .MinImageCount   = mFramebuffer->GetFramebufferCount(),
 	    .ImageCount      = mFramebuffer->GetFramebufferCount(),
+	    .MSAASamples     = VK_SAMPLE_COUNT_1_BIT,
+	    .Allocator       = nullptr,
 	    .CheckVkResultFn = CheckVkResult,
 	};
 	ImGui_ImplVulkan_Init(&initInfo, mRenderPass->GetRenderPass());
@@ -304,12 +312,12 @@ void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 	    .model      = glm::rotate(glm::mat4(1.f),
                              time * glm::radians(90.f),
                              glm::vec3(0.f, 1.f, 0.f)),
-	    .view       = glm::lookAt(glm::vec3(0.f, 2.f, 2.f),
+	    .view       = glm::lookAt(glm::vec3(0.f, 2.f + std::cos(time), 2.f),
                             glm::vec3(0.f, 0.f, 0.f),
                             glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
 	        glm::radians(45.f),
-	        mSwapchain->GetExtent().width /
+	        static_cast<float>(mSwapchain->GetExtent().width) /
 	            static_cast<float>(mSwapchain->GetExtent().height),
 	        0.1f,
 	        10.f),
@@ -477,13 +485,23 @@ void Application::CreateRenderPass() {
 void Application::CreateDescriptorSetLayout() {
 	mDescriptorSetLayout = std::make_unique<dubu::gfx::DescriptorSetLayout>(
 	    dubu::gfx::DescriptorSetLayout::CreateInfo{
-	        .device   = mDevice->GetDevice(),
-	        .bindings = {{
-	            .binding         = 0,
-	            .descriptorType  = vk::DescriptorType::eUniformBuffer,
-	            .descriptorCount = 1,
-	            .stageFlags      = vk::ShaderStageFlagBits::eVertex,
-	        }},
+	        .device = mDevice->GetDevice(),
+	        .bindings =
+	            {
+	                {
+	                    .binding         = 0,
+	                    .descriptorType  = vk::DescriptorType::eUniformBuffer,
+	                    .descriptorCount = 1,
+	                    .stageFlags      = vk::ShaderStageFlagBits::eVertex,
+	                },
+	                {
+	                    .binding = 1,
+	                    .descriptorType =
+	                        vk::DescriptorType::eCombinedImageSampler,
+	                    .descriptorCount = 1,
+	                    .stageFlags      = vk::ShaderStageFlagBits::eFragment,
+	                },
+	            },
 	    });
 }
 
@@ -602,12 +620,95 @@ void Application::CreateCommandPool() {
 	    });
 }
 
+void Application::CreateTextureImage() {
+	const std::filesystem::path imagePath = "assets/textures/dubu.png";
+
+	glm::ivec2 textureSize;
+	int        textureChannels;
+	auto       blob = ReadFile(imagePath);
+	stbi_uc*   pixels =
+	    stbi_load_from_memory(reinterpret_cast<stbi_uc*>(blob.data()),
+	                          static_cast<int>(blob.size()),
+	                          &textureSize.x,
+	                          &textureSize.y,
+	                          &textureChannels,
+	                          STBI_rgb_alpha);
+	uint32_t imageSize =
+	    static_cast<uint32_t>(textureSize.x * textureSize.y * 4);
+
+	if (!pixels) {
+		DUBU_LOG_FATAL("Failed to load texure image: {}", imagePath);
+	}
+
+	dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
+	    .device           = mDevice->GetDevice(),
+	    .physicalDevice   = mDevice->GetPhysicalDevice(),
+	    .size             = imageSize,
+	    .usage            = vk::BufferUsageFlagBits::eTransferSrc,
+	    .sharingMode      = vk::SharingMode::eExclusive,
+	    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+	                        vk::MemoryPropertyFlagBits::eHostCoherent,
+	});
+
+	stagingBuffer.SetData(pixels, static_cast<std::size_t>(imageSize));
+
+	stbi_image_free(pixels);
+
+	mTextureImage =
+	    std::make_unique<dubu::gfx::Image>(dubu::gfx::Image::CreateInfo{
+	        .device         = mDevice->GetDevice(),
+	        .physicalDevice = mDevice->GetPhysicalDevice(),
+	        .imageInfo =
+	            {
+	                .imageType = vk::ImageType::e2D,
+	                .format    = vk::Format::eR8G8B8A8Srgb,
+	                .extent =
+	                    {
+	                        .width  = static_cast<uint32_t>(textureSize.x),
+	                        .height = static_cast<uint32_t>(textureSize.y),
+	                        .depth  = 1,
+	                    },
+	                .mipLevels   = 1,
+	                .arrayLayers = 1,
+	                .samples     = vk::SampleCountFlagBits::e1,
+	                .tiling      = vk::ImageTiling::eOptimal,
+	                .usage       = vk::ImageUsageFlagBits::eTransferDst |
+	                         vk::ImageUsageFlagBits::eSampled,
+	                .sharingMode   = vk::SharingMode::eExclusive,
+	                .initialLayout = vk::ImageLayout::eUndefined,
+	            },
+	        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
+	    });
+
+	mTextureImage->TransitionImageLayout(vk::ImageLayout::eUndefined,
+	                                     vk::ImageLayout::eTransferDstOptimal,
+	                                     mDevice->GetQueueFamilies(),
+	                                     mDevice->GetGraphicsQueue());
+	mTextureImage->SetData(stagingBuffer.GetBuffer(),
+	                       mDevice->GetQueueFamilies(),
+	                       mDevice->GetGraphicsQueue(),
+	                       static_cast<uint32_t>(textureSize.x),
+	                       static_cast<uint32_t>(textureSize.y));
+	mTextureImage->TransitionImageLayout(
+	    vk::ImageLayout::eTransferDstOptimal,
+	    vk::ImageLayout::eShaderReadOnlyOptimal,
+	    mDevice->GetQueueFamilies(),
+	    mDevice->GetGraphicsQueue());
+
+	mTextureSampler =
+	    std::make_unique<dubu::gfx::Sampler>(dubu::gfx::Sampler::CreateInfo{
+	        .device      = mDevice->GetDevice(),
+	        .filter      = vk::Filter::eLinear,
+	        .addressMode = vk::SamplerAddressMode::eRepeat,
+	    });
+}
+
 void Application::CreateVertexBuffer() {
 	{
 		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
 		    .device         = mDevice->GetDevice(),
 		    .physicalDevice = mDevice->GetPhysicalDevice(),
-		    .size  = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
+		    .size  = static_cast<uint32_t>(VERTICES.size() * sizeof(Vertex)),
 		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
 		    .sharingMode      = vk::SharingMode::eExclusive,
 		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
@@ -620,7 +721,7 @@ void Application::CreateVertexBuffer() {
 		    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
 		        .device         = mDevice->GetDevice(),
 		        .physicalDevice = mDevice->GetPhysicalDevice(),
-		        .size = static_cast<uint32_t>(VERTICES.size()) * sizeof(Vertex),
+		        .size = static_cast<uint32_t>(VERTICES.size() * sizeof(Vertex)),
 		        .usage = vk::BufferUsageFlagBits::eVertexBuffer |
 		                 vk::BufferUsageFlagBits::eTransferDst,
 		        .sharingMode      = vk::SharingMode::eExclusive,
@@ -635,7 +736,7 @@ void Application::CreateVertexBuffer() {
 		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
 		    .device         = mDevice->GetDevice(),
 		    .physicalDevice = mDevice->GetPhysicalDevice(),
-		    .size  = static_cast<uint32_t>(INDICES.size()) * sizeof(uint16_t),
+		    .size  = static_cast<uint32_t>(INDICES.size() * sizeof(uint16_t)),
 		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
 		    .sharingMode      = vk::SharingMode::eExclusive,
 		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
@@ -649,7 +750,7 @@ void Application::CreateVertexBuffer() {
 		        .device         = mDevice->GetDevice(),
 		        .physicalDevice = mDevice->GetPhysicalDevice(),
 		        .size =
-		            static_cast<uint32_t>(INDICES.size()) * sizeof(uint16_t),
+		            static_cast<uint32_t>(INDICES.size() * sizeof(uint16_t)),
 		        .usage = vk::BufferUsageFlagBits::eIndexBuffer |
 		                 vk::BufferUsageFlagBits::eTransferDst,
 		        .sharingMode      = vk::SharingMode::eExclusive,
@@ -683,8 +784,14 @@ void Application::CreateDescriptorPool() {
 	        .device = mDevice->GetDevice(),
 	        .poolSizes =
 	            {
-	                {vk::DescriptorType::eUniformBuffer,
-	                 static_cast<uint32_t>(mSwapchain->GetImageCount())},
+	                {
+	                    vk::DescriptorType::eUniformBuffer,
+	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	                },
+	                {
+	                    vk::DescriptorType::eCombinedImageSampler,
+	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	                },
 	            },
 	        .maxSets = static_cast<uint32_t>(mSwapchain->GetImageCount()),
 	    });
@@ -702,11 +809,34 @@ void Application::CreateDescriptorSets() {
 	            mDescriptorSetLayout->GetDescriptorSetLayout()),
 	    });
 
-	std::vector<vk::Buffer> buffers;
-	for (auto& uniformBuffer : mUniformBuffers) {
-		buffers.push_back(uniformBuffer->GetBuffer());
+	for (std::size_t i = 0; i < mSwapchain->GetImageCount(); ++i) {
+		std::vector<vk::WriteDescriptorSet> descriptorWrites;
+		vk::DescriptorBufferInfo            bufferInfo{
+            .buffer = mUniformBuffers[i]->GetBuffer(),
+            .offset = 0,
+            .range  = VK_WHOLE_SIZE,
+        };
+		descriptorWrites.push_back(vk::WriteDescriptorSet{
+		    .dstBinding      = 0,
+		    .dstArrayElement = 0,
+		    .descriptorCount = 1,
+		    .descriptorType  = vk::DescriptorType::eUniformBuffer,
+		    .pBufferInfo     = &bufferInfo});
+
+		vk::DescriptorImageInfo imageInfo{
+		    .sampler     = mTextureSampler->GetSampler(),
+		    .imageView   = mTextureImage->GetImageView(),
+		    .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+		};
+		descriptorWrites.push_back(vk::WriteDescriptorSet{
+		    .dstBinding      = 1,
+		    .dstArrayElement = 0,
+		    .descriptorCount = 1,
+		    .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
+		    .pImageInfo      = &imageInfo});
+
+		mDescriptorSet->UpdateDescriptorSets(i, descriptorWrites);
 	}
-	mDescriptorSet->UpdateDescriptorSets(buffers);
 }
 
 void Application::CreateCommandBuffer() {
