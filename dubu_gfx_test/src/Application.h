@@ -111,5 +111,5 @@ private:
 	bool                             mIsMinimized = false;
 
 	std::unique_ptr<dubu::gfx::DescriptorPool> mImGuiDescriptorPool = {};
-	bool                                       mShowDemoWindow      = true;
+	bool                                       mShowDemoWindow      = false;
 };
