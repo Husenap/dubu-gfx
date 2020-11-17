@@ -5,6 +5,8 @@ set(src_files
     "src/Application.h"
     "src/Model.cpp"
     "src/Model.h"
+    "src/Texture.cpp"
+    "src/Texture.h"
     "src/main.cpp")
 
 add_executable(${target_name} ${src_files})

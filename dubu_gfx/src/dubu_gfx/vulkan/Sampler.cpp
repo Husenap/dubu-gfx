@@ -16,7 +16,7 @@ Sampler::Sampler(const CreateInfo& createInfo) {
 	    .compareEnable           = VK_FALSE,
 	    .compareOp               = vk::CompareOp::eAlways,
 	    .minLod                  = 0.f,
-	    .maxLod                  = 0.f,
+	    .maxLod                  = VK_LOD_CLAMP_NONE,
 	    .borderColor             = vk::BorderColor::eIntOpaqueBlack,
 	    .unnormalizedCoordinates = VK_FALSE,
 	});

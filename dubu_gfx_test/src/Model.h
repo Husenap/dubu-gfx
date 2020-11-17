@@ -1,7 +1,11 @@
 #pragma once
 
+#include <map>
+
 #include <dubu_gfx/dubu_gfx.h>
 #include <glm/glm.hpp>
+
+#include "Texture.h"
 
 struct Vertex {
 	glm::vec3 position;
@@ -40,12 +44,13 @@ struct Vertex {
 	}
 };
 
-struct Texture {
-	uint32_t    id;
-	std::string type;
-};
-
 class Mesh {
+public:
+	struct Texture {
+		uint32_t    id;
+		std::string type;
+	};
+
 public:
 	struct CreateInfo {
 		vk::Device                    device         = {};
@@ -54,7 +59,7 @@ public:
 		vk::Queue                     graphicsQueue  = {};
 		std::vector<Vertex>           vertices       = {};
 		std::vector<uint32_t>         indices        = {};
-		std::vector<Texture>          textures       = {};
+		std::vector<Mesh::Texture>    textures       = {};
 	};
 
 public:
@@ -91,5 +96,6 @@ public:
 	    std::vector<dubu::gfx::DrawingCommand>& drawingCommands);
 
 private:
-	std::vector<Mesh> mMeshes;
+	std::vector<Mesh>           mMeshes;
+	std::map<std::string, Texture> mTextures;
 };

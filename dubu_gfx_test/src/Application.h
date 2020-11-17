@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Model.h"
+#include "Texture.h"
 
 struct UniformBufferObject {
 	glm::mat4 model;
@@ -65,7 +66,7 @@ private:
 	std::unique_ptr<dubu::gfx::CommandPool>         mCommandPool         = {};
 	std::unique_ptr<dubu::gfx::Image>               mDepthImage          = {};
 	std::unique_ptr<Model>                          mModel               = {};
-	std::unique_ptr<dubu::gfx::Image>               mTextureImage        = {};
+	Texture                                         mTextureImage        = {};
 	std::unique_ptr<dubu::gfx::Sampler>             mTextureSampler      = {};
 	std::vector<std::unique_ptr<dubu::gfx::Buffer>> mUniformBuffers      = {};
 	std::unique_ptr<dubu::gfx::DescriptorPool>      mDescriptorPool      = {};

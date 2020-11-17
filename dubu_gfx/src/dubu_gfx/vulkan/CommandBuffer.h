@@ -21,7 +21,7 @@ public:
 	    const std::vector<DrawingCommand>& drawingCommands);
 
 	[[nodiscard]] const vk::CommandBuffer& GetCommandBuffer(
-	    std::size_t index) const {
+	    std::size_t index = 0) const {
 		return *mCommandBuffers[index];
 	}
 

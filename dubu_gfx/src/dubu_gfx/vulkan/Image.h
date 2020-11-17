@@ -29,6 +29,11 @@ public:
 	                           const QueueFamilyIndices& queueFamilies,
 	                           const vk::Queue&          graphicsQueue);
 
+	void GenerateMipChain(const QueueFamilyIndices& queueFamilies,
+	                      const vk::Queue&          graphicsQueue,
+	                      uint32_t                  width,
+	                      uint32_t                  height);
+
 	[[nodiscard]] const vk::Image&     GetImage() const { return *mImage; }
 	[[nodiscard]] const vk::ImageView& GetImageView() const {
 		return *mImageView;

@@ -11,6 +11,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
 constexpr uint32_t WIDTH                = 1600;
 constexpr uint32_t HEIGHT               = 900;
@@ -296,18 +298,19 @@ void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 	auto time = static_cast<float>(glfwGetTime());
 
 	UniformBufferObject ubo{
-	    .model      = glm::rotate(glm::mat4(1.f),
-                             -(std::cosf(time) * 0.5f + 0.5f) * glm::radians(90.f),
-                             glm::vec3(0.f, 1.f, 0.f)),
-	    .view       = glm::lookAt(glm::vec3(0.f, 1.f+std::sinf(time*0.25f), 3.f),
-                            glm::vec3(0.f, 0.f, 0.f),
-                            glm::vec3(0.f, 1.f, 0.f)),
+	    .model =
+	        glm::rotate(glm::mat4(1.f),
+	                    -(std::cosf(time) * 0.5f + 0.5f) * glm::radians(90.f),
+	                    glm::vec3(0.f, 1.f, 0.f)),
+	    .view = glm::lookAt(glm::vec3(0.f, 1.f + std::sinf(time * 0.25f), 8.f),
+	                        glm::vec3(0.f, 0.f, 0.f),
+	                        glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
-	        glm::radians(90.f),
+	        glm::radians(45.f),
 	        static_cast<float>(mSwapchain->GetExtent().width) /
 	            static_cast<float>(mSwapchain->GetExtent().height),
 	        0.1f,
-	        10.f),
+	        100.f),
 	};
 
 	ubo.projection[1][1] *= -1.f;
@@ -671,80 +674,14 @@ void Application::CreateDepthResources() {
 }
 
 void Application::CreateTextureImage() {
-	const std::filesystem::path imagePath = "assets/models/backpack/1001_albedo.jpg";
-
-	glm::ivec2 textureSize;
-	int        textureChannels;
-	auto       blob = ReadFile(imagePath);
-	stbi_uc*   pixels =
-	    stbi_load_from_memory(reinterpret_cast<stbi_uc*>(blob.data()),
-	                          static_cast<int>(blob.size()),
-	                          &textureSize.x,
-	                          &textureSize.y,
-	                          &textureChannels,
-	                          STBI_rgb_alpha);
-	uint32_t imageSize =
-	    static_cast<uint32_t>(textureSize.x * textureSize.y * 4);
-
-	if (!pixels) {
-		DUBU_LOG_FATAL("Failed to load texure image: {}", imagePath);
-	}
-
-	dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
-	    .device           = mDevice->GetDevice(),
-	    .physicalDevice   = mDevice->GetPhysicalDevice(),
-	    .size             = imageSize,
-	    .usage            = vk::BufferUsageFlagBits::eTransferSrc,
-	    .sharingMode      = vk::SharingMode::eExclusive,
-	    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
-	                        vk::MemoryPropertyFlagBits::eHostCoherent,
-	});
-
-	stagingBuffer.SetData(pixels, static_cast<std::size_t>(imageSize));
-
-	stbi_image_free(pixels);
-
-	mTextureImage =
-	    std::make_unique<dubu::gfx::Image>(dubu::gfx::Image::CreateInfo{
+	mTextureImage.LoadFromFile(
+	    {
 	        .device         = mDevice->GetDevice(),
 	        .physicalDevice = mDevice->GetPhysicalDevice(),
-	        .imageInfo =
-	            {
-	                .imageType = vk::ImageType::e2D,
-	                .format    = vk::Format::eR8G8B8A8Srgb,
-	                .extent =
-	                    {
-	                        .width  = static_cast<uint32_t>(textureSize.x),
-	                        .height = static_cast<uint32_t>(textureSize.y),
-	                        .depth  = 1,
-	                    },
-	                .mipLevels   = 1,
-	                .arrayLayers = 1,
-	                .samples     = vk::SampleCountFlagBits::e1,
-	                .tiling      = vk::ImageTiling::eOptimal,
-	                .usage       = vk::ImageUsageFlagBits::eTransferDst |
-	                         vk::ImageUsageFlagBits::eSampled,
-	                .sharingMode   = vk::SharingMode::eExclusive,
-	                .initialLayout = vk::ImageLayout::eUndefined,
-	            },
-	        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
-	        .aspectMask       = vk::ImageAspectFlagBits::eColor,
-	    });
-
-	mTextureImage->TransitionImageLayout(vk::ImageLayout::eUndefined,
-	                                     vk::ImageLayout::eTransferDstOptimal,
-	                                     mDevice->GetQueueFamilies(),
-	                                     mDevice->GetGraphicsQueue());
-	mTextureImage->SetData(stagingBuffer.GetBuffer(),
-	                       mDevice->GetQueueFamilies(),
-	                       mDevice->GetGraphicsQueue(),
-	                       static_cast<uint32_t>(textureSize.x),
-	                       static_cast<uint32_t>(textureSize.y));
-	mTextureImage->TransitionImageLayout(
-	    vk::ImageLayout::eTransferDstOptimal,
-	    vk::ImageLayout::eShaderReadOnlyOptimal,
-	    mDevice->GetQueueFamilies(),
-	    mDevice->GetGraphicsQueue());
+	        .queueFamilies  = mDevice->GetQueueFamilies(),
+	        .graphicsQueue  = mDevice->GetGraphicsQueue(),
+	    },
+	    "assets/models/backpack/1001_albedo.jpg");
 
 	mTextureSampler =
 	    std::make_unique<dubu::gfx::Sampler>(dubu::gfx::Sampler::CreateInfo{
@@ -760,7 +697,7 @@ void Application::CreateModel() {
 	                      .physicalDevice = mDevice->GetPhysicalDevice(),
 	                      .queueFamilies  = mDevice->GetQueueFamilies(),
 	                      .graphicsQueue  = mDevice->GetGraphicsQueue(),
-	                      .filepath       = "assets/models/backpack/backpack.fbx"});
+	                      .filepath = "assets/models/backpack/backpack.glb"});
 }
 
 void Application::CreateUniformBuffers() {
@@ -825,7 +762,7 @@ void Application::CreateDescriptorSets() {
 
 		vk::DescriptorImageInfo imageInfo{
 		    .sampler     = mTextureSampler->GetSampler(),
-		    .imageView   = mTextureImage->GetImageView(),
+		    .imageView   = mTextureImage.GetImageView(),
 		    .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
 		};
 		descriptorWrites.push_back(vk::WriteDescriptorSet{

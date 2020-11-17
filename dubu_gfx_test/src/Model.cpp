@@ -1,6 +1,7 @@
 #include "Model.h"
 
 #include <assimp/Importer.hpp>
+#include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
@@ -79,6 +80,12 @@ Model::Model(const CreateInfo& createInfo) {
         createInfo.filepath.string().c_str(),
         aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
 
+	if (!scene) {
+		DUBU_LOG_ERROR("Failed to load model: {}", createInfo.filepath);
+		DUBU_LOG_ERROR("Assimp error: {}", importer.GetErrorString());
+		return;
+	}
+
 	for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
 		aiMesh* mesh = scene->mMeshes[i];
 
@@ -109,6 +116,66 @@ Model::Model(const CreateInfo& createInfo) {
 			meshInfo.indices[faceIndex * 3 + 2] =
 			    mesh->mFaces[faceIndex].mIndices[2];
 		}
+
+		/*
+		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+		aiString texturePath;
+		if (material->GetTexture(
+		        AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE,
+		        &texturePath) == aiReturn_SUCCESS) {
+			auto it = mTextures.find(texturePath.C_Str());
+			if (it == mTextures.end()) {
+				auto textureData =
+				    scene->GetEmbeddedTexture(texturePath.C_Str());
+
+				Texture newTexture;
+				if (textureData->mHeight == 0) {
+					newTexture.LoadFromCompressedMemory(
+					    {
+					        .device         = createInfo.device,
+					        .physicalDevice = createInfo.physicalDevice,
+					        .queueFamilies  = createInfo.queueFamilies,
+					        .graphicsQueue  = createInfo.graphicsQueue,
+					    },
+					    textureData->pcData,
+					    static_cast<std::size_t>(textureData->mWidth));
+				} else {
+					newTexture.LoadFromMemory(
+					    {.device         = createInfo.device,
+					     .physicalDevice = createInfo.physicalDevice,
+					     .queueFamilies  = createInfo.queueFamilies,
+					     .graphicsQueue  = createInfo.graphicsQueue},
+					    {textureData->mWidth, textureData->mHeight},
+					    textureData->pcData,
+					    static_cast<std::size_t>(textureData->mWidth *
+					                             textureData->mHeight * 4));
+				}
+
+				mTextures.emplace(texturePath.C_Str(), std::move(newTexture));
+			}
+		} else {
+		}
+
+		material->GetTexture(
+		    AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
+		    &texturePath);
+
+		auto baseTexture = scene->GetEmbeddedTexture(fileBaseColor.C_Str());
+		auto metallicRoughnessTexture =
+		    scene->GetEmbeddedTexture(fileMetallicRoughness.C_Str());
+
+		baseTexture->pcData;
+		metallicRoughnessTexture->pcData;
+
+		if (material->GetTextureCount(aiTextureType_NORMALS) > 0) {
+		    aiString normalsPath;
+		    material->GetTexture(aiTextureType_NORMALS, 0, &normalsPath);
+		    auto normalTexture = scene->GetEmbeddedTexture(normalsPath.C_Str());
+		    float x = normalTexture->pcData->r;
+		    x = 0.f;
+		}
+		*/
 
 		mMeshes.push_back(Mesh(meshInfo));
 	}
