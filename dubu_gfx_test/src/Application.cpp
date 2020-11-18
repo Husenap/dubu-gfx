@@ -105,17 +105,16 @@ void Application::InitFramework() {
 	CreateSwapchain();
 	CreateDepthResources();
 	CreateRenderPass();
-	CreateDescriptorSetLayout();
+	CreateDescriptorSetLayouts();
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
 	CreateCommandPool();
-	CreateTextureImage();
-	CreateModel();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
 	CreateCommandBuffer();
 	CreateSyncObjects();
+	CreateModel();
 }
 
 static void CheckVkResult(VkResult err) {
@@ -226,7 +225,6 @@ void Application::RecreateSwapchain() {
 
 	mCommandBuffer.reset();
 	mDescriptorSet.reset();
-	mDescriptorPool.reset();
 	mUniformBuffers.clear();
 	mFramebuffer.reset();
 	mGraphicsPipeline.reset();
@@ -241,7 +239,6 @@ void Application::RecreateSwapchain() {
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
 	CreateUniformBuffers();
-	CreateDescriptorPool();
 	CreateDescriptorSets();
 	CreateCommandBuffer();
 
@@ -279,7 +276,7 @@ void Application::RecordCommands(uint32_t imageIndex) {
 	        static_cast<std::size_t>(imageIndex))},
 	});
 
-	mModel->RecordCommands(drawingCommands);
+	mModel->RecordCommands(*mPipelineLayout, drawingCommands);
 
 	drawingCommands.push_back(dubu::gfx::DrawingCommands::Custom{
 	    .customFunction =
@@ -491,27 +488,47 @@ void Application::CreateRenderPass() {
 	    });
 }
 
-void Application::CreateDescriptorSetLayout() {
-	mDescriptorSetLayout = std::make_unique<dubu::gfx::DescriptorSetLayout>(
-	    dubu::gfx::DescriptorSetLayout::CreateInfo{
-	        .device = mDevice->GetDevice(),
-	        .bindings =
-	            {
+void Application::CreateDescriptorSetLayouts() {
+	mDescriptorSetLayouts.scene =
+	    std::make_unique<dubu::gfx::DescriptorSetLayout>(
+	        dubu::gfx::DescriptorSetLayout::CreateInfo{
+	            .device   = mDevice->GetDevice(),
+	            .bindings = {{
+	                .binding         = 0,
+	                .descriptorType  = vk::DescriptorType::eUniformBuffer,
+	                .descriptorCount = 1,
+	                .stageFlags      = vk::ShaderStageFlagBits::eVertex,
+	            }},
+	        });
+	mDescriptorSetLayouts.material =
+	    std::make_unique<dubu::gfx::DescriptorSetLayout>(
+	        dubu::gfx::DescriptorSetLayout::CreateInfo{
+	            .device = mDevice->GetDevice(),
+	            .bindings =
 	                {
-	                    .binding         = 0,
-	                    .descriptorType  = vk::DescriptorType::eUniformBuffer,
-	                    .descriptorCount = 1,
-	                    .stageFlags      = vk::ShaderStageFlagBits::eVertex,
+	                    {
+	                        .binding = 0,
+	                        .descriptorType =
+	                            vk::DescriptorType::eCombinedImageSampler,
+	                        .descriptorCount = 1,
+	                        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+	                    },
+	                    {
+	                        .binding = 1,
+	                        .descriptorType =
+	                            vk::DescriptorType::eCombinedImageSampler,
+	                        .descriptorCount = 1,
+	                        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+	                    },
+	                    {
+	                        .binding = 2,
+	                        .descriptorType =
+	                            vk::DescriptorType::eCombinedImageSampler,
+	                        .descriptorCount = 1,
+	                        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+	                    },
 	                },
-	                {
-	                    .binding = 1,
-	                    .descriptorType =
-	                        vk::DescriptorType::eCombinedImageSampler,
-	                    .descriptorCount = 1,
-	                    .stageFlags      = vk::ShaderStageFlagBits::eFragment,
-	                },
-	            },
-	    });
+	        });
 }
 
 void Application::CreateGraphicsPipeline() {
@@ -596,10 +613,15 @@ void Application::CreateGraphicsPipeline() {
 	dubu::gfx::DynamicState dynamicState(
 	    {vk::DynamicState::eViewport, vk::DynamicState::eLineWidth});
 
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
+	    mDescriptorSetLayouts.scene->GetDescriptorSetLayout(),
+	    mDescriptorSetLayouts.material->GetDescriptorSetLayout(),
+	};
 	mPipelineLayout = mDevice->GetDevice().createPipelineLayoutUnique(
 	    vk::PipelineLayoutCreateInfo{
-	        .setLayoutCount = 1,
-	        .pSetLayouts    = &mDescriptorSetLayout->GetDescriptorSetLayout(),
+	        .setLayoutCount =
+	            static_cast<uint32_t>(descriptorSetLayouts.size()),
+	        .pSetLayouts = descriptorSetLayouts.data(),
 	    });
 
 	mGraphicsPipeline = std::make_unique<dubu::gfx::GraphicsPipeline>(
@@ -673,31 +695,17 @@ void Application::CreateDepthResources() {
 	    mDevice->GetGraphicsQueue());
 }
 
-void Application::CreateTextureImage() {
-	mTextureImage.LoadFromFile(
-	    {
-	        .device         = mDevice->GetDevice(),
-	        .physicalDevice = mDevice->GetPhysicalDevice(),
-	        .queueFamilies  = mDevice->GetQueueFamilies(),
-	        .graphicsQueue  = mDevice->GetGraphicsQueue(),
-	    },
-	    "assets/models/backpack/1001_albedo.jpg");
-
-	mTextureSampler =
-	    std::make_unique<dubu::gfx::Sampler>(dubu::gfx::Sampler::CreateInfo{
-	        .device      = mDevice->GetDevice(),
-	        .filter      = vk::Filter::eLinear,
-	        .addressMode = vk::SamplerAddressMode::eRepeat,
-	    });
-}
-
 void Application::CreateModel() {
-	mModel = std::make_unique<Model>(
-	    Model::CreateInfo{.device         = mDevice->GetDevice(),
-	                      .physicalDevice = mDevice->GetPhysicalDevice(),
-	                      .queueFamilies  = mDevice->GetQueueFamilies(),
-	                      .graphicsQueue  = mDevice->GetGraphicsQueue(),
-	                      .filepath = "assets/models/backpack/backpack.glb"});
+	mModel = std::make_unique<Model>(Model::CreateInfo{
+	    .device         = mDevice->GetDevice(),
+	    .physicalDevice = mDevice->GetPhysicalDevice(),
+	    .queueFamilies  = mDevice->GetQueueFamilies(),
+	    .graphicsQueue  = mDevice->GetGraphicsQueue(),
+	    .filepath       = "assets/models/backpack/backpack.glb",
+	    .descriptorPool = mDescriptorPool->GetDescriptorPool(),
+	    .descriptorSetLayout =
+	        mDescriptorSetLayouts.material->GetDescriptorSetLayout(),
+	});
 }
 
 void Application::CreateUniformBuffers() {
@@ -721,16 +729,10 @@ void Application::CreateDescriptorPool() {
 	        .device = mDevice->GetDevice(),
 	        .poolSizes =
 	            {
-	                {
-	                    vk::DescriptorType::eUniformBuffer,
-	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
-	                },
-	                {
-	                    vk::DescriptorType::eCombinedImageSampler,
-	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
-	                },
+	                {vk::DescriptorType::eUniformBuffer, 100},
+	                {vk::DescriptorType::eCombinedImageSampler, 100},
 	            },
-	        .maxSets = static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	        .maxSets = 2 * 100,
 	    });
 }
 
@@ -743,7 +745,7 @@ void Application::CreateDescriptorSets() {
 	            static_cast<uint32_t>(mSwapchain->GetImageCount()),
 	        .layouts = std::vector<vk::DescriptorSetLayout>(
 	            mSwapchain->GetImageCount(),
-	            mDescriptorSetLayout->GetDescriptorSetLayout()),
+	            mDescriptorSetLayouts.scene->GetDescriptorSetLayout()),
 	    });
 
 	for (std::size_t i = 0; i < mSwapchain->GetImageCount(); ++i) {
@@ -759,18 +761,6 @@ void Application::CreateDescriptorSets() {
 		    .descriptorCount = 1,
 		    .descriptorType  = vk::DescriptorType::eUniformBuffer,
 		    .pBufferInfo     = &bufferInfo});
-
-		vk::DescriptorImageInfo imageInfo{
-		    .sampler     = mTextureSampler->GetSampler(),
-		    .imageView   = mTextureImage.GetImageView(),
-		    .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-		};
-		descriptorWrites.push_back(vk::WriteDescriptorSet{
-		    .dstBinding      = 1,
-		    .dstArrayElement = 0,
-		    .descriptorCount = 1,
-		    .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
-		    .pImageInfo      = &imageInfo});
 
 		mDescriptorSet->UpdateDescriptorSets(i, descriptorWrites);
 	}

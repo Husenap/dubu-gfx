@@ -2,6 +2,7 @@
 
 #include <map>
 
+#include <assimp/scene.h>
 #include <dubu_gfx/dubu_gfx.h>
 #include <glm/glm.hpp>
 
@@ -46,12 +47,6 @@ struct Vertex {
 
 class Mesh {
 public:
-	struct Texture {
-		uint32_t    id;
-		std::string type;
-	};
-
-public:
 	struct CreateInfo {
 		vk::Device                    device         = {};
 		vk::PhysicalDevice            physicalDevice = {};
@@ -59,7 +54,7 @@ public:
 		vk::Queue                     graphicsQueue  = {};
 		std::vector<Vertex>           vertices       = {};
 		std::vector<uint32_t>         indices        = {};
-		std::vector<Mesh::Texture>    textures       = {};
+		uint32_t                      materialIndex  = {};
 	};
 
 public:
@@ -72,30 +67,48 @@ public:
 		return mIndexBuffer->GetBuffer();
 	}
 	[[nodiscard]] const uint32_t GetIndexCount() const { return mIndexCount; }
+	[[nodiscard]] const uint32_t GetMaterialIndex() const {
+		return mMaterialIndex;
+	}
 
 private:
-	std::unique_ptr<dubu::gfx::Buffer> mVertexBuffer = {};
-	std::unique_ptr<dubu::gfx::Buffer> mIndexBuffer  = {};
-	uint32_t                           mIndexCount   = {};
+	std::unique_ptr<dubu::gfx::Buffer> mVertexBuffer  = {};
+	std::unique_ptr<dubu::gfx::Buffer> mIndexBuffer   = {};
+	uint32_t                           mIndexCount    = {};
+	uint32_t                           mMaterialIndex = {};
 };
 
 class Model {
 public:
 	struct CreateInfo {
-		vk::Device                    device         = {};
-		vk::PhysicalDevice            physicalDevice = {};
-		dubu::gfx::QueueFamilyIndices queueFamilies  = {};
-		vk::Queue                     graphicsQueue  = {};
-		std::filesystem::path         filepath       = {};
+		vk::Device                    device              = {};
+		vk::PhysicalDevice            physicalDevice      = {};
+		dubu::gfx::QueueFamilyIndices queueFamilies       = {};
+		vk::Queue                     graphicsQueue       = {};
+		std::filesystem::path         filepath            = {};
+		vk::DescriptorPool            descriptorPool      = {};
+		vk::DescriptorSetLayout       descriptorSetLayout = {};
+	};
+
+	struct Material {
+		std::unique_ptr<dubu::gfx::DescriptorSet> mDescriptorSet = {};
 	};
 
 public:
 	Model(const CreateInfo& createInfo);
 
 	void RecordCommands(
+	    vk::PipelineLayout                      pipelineLayout,
 	    std::vector<dubu::gfx::DrawingCommand>& drawingCommands);
 
+	vk::DescriptorImageInfo LoadTexture(const CreateInfo& createInfo,
+	                                    const aiScene*    scene,
+	                                    aiMaterial*       material,
+	                                    aiTextureType     textureType,
+	                                    unsigned int      index);
+
 private:
-	std::vector<Mesh>           mMeshes;
-	std::map<std::string, Texture> mTextures;
+	std::vector<Mesh>              mMeshes    = {};
+	std::map<std::string, Texture> mTextures  = {};
+	std::vector<Material>          mMaterials = {};
 };

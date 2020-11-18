@@ -58,6 +58,7 @@ void Texture::LoadFromMemory(const CreateInfo& createInfo,
 	    static_cast<uint32_t>(
 	        std::floor(std::log2(std::max(mDimensions.x, mDimensions.y)))) +
 	    1;
+	mipLevels = 1;
 
 	dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
 	    .device           = createInfo.device,
@@ -118,4 +119,17 @@ void Texture::LoadFromMemory(const CreateInfo& createInfo,
 	                              vk::ImageLayout::eShaderReadOnlyOptimal,
 	                              createInfo.queueFamilies,
 	                              createInfo.graphicsQueue);
+
+	mSampler =
+	    std::make_unique<dubu::gfx::Sampler>(dubu::gfx::Sampler::CreateInfo{
+	        .device      = createInfo.device,
+	        .filter      = vk::Filter::eLinear,
+	        .addressMode = vk::SamplerAddressMode::eRepeat,
+	    });
+
+	mImageInfo = {
+	    .sampler     = mSampler->GetSampler(),
+	    .imageView   = mImage->GetImageView(),
+	    .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+	};
 }

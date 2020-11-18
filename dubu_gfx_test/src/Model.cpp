@@ -3,7 +3,6 @@
 #include <assimp/Importer.hpp>
 #include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
-#include <assimp/scene.h>
 
 glm::vec3 AiToGlm(aiVector3D v) {
 	return {v.x, v.y, v.z};
@@ -86,6 +85,61 @@ Model::Model(const CreateInfo& createInfo) {
 		return;
 	}
 
+	{
+		Texture  defaultTexture;
+		uint32_t color = 0xffffffff;
+		defaultTexture.LoadFromMemory(
+		    {.device         = createInfo.device,
+		     .physicalDevice = createInfo.physicalDevice,
+		     .queueFamilies  = createInfo.queueFamilies,
+		     .graphicsQueue  = createInfo.graphicsQueue},
+		    {1, 1},
+		    &color,
+		    4);
+		mTextures["default"] = std::move(defaultTexture);
+	}
+
+	mMaterials.resize(scene->mNumMaterials);
+	for (unsigned int materialIndex = 0; materialIndex < scene->mNumMaterials;
+	     ++materialIndex) {
+		mMaterials[materialIndex].mDescriptorSet =
+		    std::make_unique<dubu::gfx::DescriptorSet>(
+		        dubu::gfx::DescriptorSet::CreateInfo{
+		            .device             = createInfo.device,
+		            .descriptorPool     = createInfo.descriptorPool,
+		            .descriptorSetCount = 1,
+		            .layouts            = {createInfo.descriptorSetLayout},
+		        });
+
+		aiMaterial* material = scene->mMaterials[materialIndex];
+
+		std::vector<vk::DescriptorImageInfo> imageDescriptors = {
+		    LoadTexture(createInfo,
+		                scene,
+		                material,
+		                AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE),
+		    LoadTexture(
+		        createInfo,
+		        scene,
+		        material,
+		        AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE),
+		    LoadTexture(createInfo, scene, material, aiTextureType_NORMALS, 0),
+		};
+
+		std::vector<vk::WriteDescriptorSet> writeDescriptorSets{};
+		for (std::size_t i = 0; i < imageDescriptors.size(); ++i) {
+			writeDescriptorSets.push_back(vk::WriteDescriptorSet{
+			    .dstBinding      = static_cast<uint32_t>(i),
+			    .descriptorCount = 1,
+			    .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
+			    .pImageInfo      = &imageDescriptors[i],
+			});
+		}
+
+		mMaterials[materialIndex].mDescriptorSet->UpdateDescriptorSets(
+		    0, writeDescriptorSets);
+	}
+
 	for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
 		aiMesh* mesh = scene->mMeshes[i];
 
@@ -94,6 +148,7 @@ Model::Model(const CreateInfo& createInfo) {
 		    .physicalDevice = createInfo.physicalDevice,
 		    .queueFamilies  = createInfo.queueFamilies,
 		    .graphicsQueue  = createInfo.graphicsQueue,
+		    .materialIndex  = mesh->mMaterialIndex,
 		};
 
 		meshInfo.vertices.resize(mesh->mNumVertices);
@@ -117,73 +172,22 @@ Model::Model(const CreateInfo& createInfo) {
 			    mesh->mFaces[faceIndex].mIndices[2];
 		}
 
-		/*
-		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
-		aiString texturePath;
-		if (material->GetTexture(
-		        AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE,
-		        &texturePath) == aiReturn_SUCCESS) {
-			auto it = mTextures.find(texturePath.C_Str());
-			if (it == mTextures.end()) {
-				auto textureData =
-				    scene->GetEmbeddedTexture(texturePath.C_Str());
-
-				Texture newTexture;
-				if (textureData->mHeight == 0) {
-					newTexture.LoadFromCompressedMemory(
-					    {
-					        .device         = createInfo.device,
-					        .physicalDevice = createInfo.physicalDevice,
-					        .queueFamilies  = createInfo.queueFamilies,
-					        .graphicsQueue  = createInfo.graphicsQueue,
-					    },
-					    textureData->pcData,
-					    static_cast<std::size_t>(textureData->mWidth));
-				} else {
-					newTexture.LoadFromMemory(
-					    {.device         = createInfo.device,
-					     .physicalDevice = createInfo.physicalDevice,
-					     .queueFamilies  = createInfo.queueFamilies,
-					     .graphicsQueue  = createInfo.graphicsQueue},
-					    {textureData->mWidth, textureData->mHeight},
-					    textureData->pcData,
-					    static_cast<std::size_t>(textureData->mWidth *
-					                             textureData->mHeight * 4));
-				}
-
-				mTextures.emplace(texturePath.C_Str(), std::move(newTexture));
-			}
-		} else {
-		}
-
-		material->GetTexture(
-		    AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
-		    &texturePath);
-
-		auto baseTexture = scene->GetEmbeddedTexture(fileBaseColor.C_Str());
-		auto metallicRoughnessTexture =
-		    scene->GetEmbeddedTexture(fileMetallicRoughness.C_Str());
-
-		baseTexture->pcData;
-		metallicRoughnessTexture->pcData;
-
-		if (material->GetTextureCount(aiTextureType_NORMALS) > 0) {
-		    aiString normalsPath;
-		    material->GetTexture(aiTextureType_NORMALS, 0, &normalsPath);
-		    auto normalTexture = scene->GetEmbeddedTexture(normalsPath.C_Str());
-		    float x = normalTexture->pcData->r;
-		    x = 0.f;
-		}
-		*/
-
 		mMeshes.push_back(Mesh(meshInfo));
 	}
 }
 
 void Model::RecordCommands(
+    vk::PipelineLayout                      pipelineLayout,
     std::vector<dubu::gfx::DrawingCommand>& drawingCommands) {
 	for (auto& mesh : mMeshes) {
+		drawingCommands.push_back(
+		    dubu::gfx::DrawingCommands::BindDescriptorSets{
+		        .bindPoint      = vk::PipelineBindPoint::eGraphics,
+		        .pipelineLayout = pipelineLayout,
+		        .firstSet       = 1,
+		        .descriptorSets = {mMaterials[mesh.GetMaterialIndex()]
+		                               .mDescriptorSet->GetDescriptorSet()},
+		    });
 		drawingCommands.push_back(dubu::gfx::DrawingCommands::BindVertexBuffers{
 		    .buffers = {mesh.GetVertexBuffer()},
 		    .offsets = {0},
@@ -197,5 +201,50 @@ void Model::RecordCommands(
 		    .indexCount    = mesh.GetIndexCount(),
 		    .instanceCount = 1,
 		});
+	}
+}
+
+vk::DescriptorImageInfo Model::LoadTexture(const CreateInfo& createInfo,
+                                           const aiScene*    scene,
+                                           aiMaterial*       material,
+                                           aiTextureType     textureType,
+                                           unsigned int      index) {
+	aiString texturePath;
+	if (material->GetTexture(textureType, index, &texturePath) ==
+	    aiReturn_SUCCESS) {
+		auto it = mTextures.find(texturePath.C_Str());
+		if (it == mTextures.end()) {
+			auto textureData = scene->GetEmbeddedTexture(texturePath.C_Str());
+
+			Texture newTexture;
+			if (textureData->mHeight == 0) {
+				newTexture.LoadFromCompressedMemory(
+				    {
+				        .device         = createInfo.device,
+				        .physicalDevice = createInfo.physicalDevice,
+				        .queueFamilies  = createInfo.queueFamilies,
+				        .graphicsQueue  = createInfo.graphicsQueue,
+				    },
+				    textureData->pcData,
+				    static_cast<std::size_t>(textureData->mWidth));
+			} else {
+				newTexture.LoadFromMemory(
+				    {.device         = createInfo.device,
+				     .physicalDevice = createInfo.physicalDevice,
+				     .queueFamilies  = createInfo.queueFamilies,
+				     .graphicsQueue  = createInfo.graphicsQueue},
+				    {textureData->mWidth, textureData->mHeight},
+				    textureData->pcData,
+				    static_cast<std::size_t>(textureData->mWidth *
+				                             textureData->mHeight * 4));
+			}
+
+			it = mTextures.emplace(texturePath.C_Str(), std::move(newTexture))
+			         .first;
+		}
+
+		return it->second.GetImageInfo();
+	} else {
+		return mTextures["default"].GetImageInfo();
 	}
 }

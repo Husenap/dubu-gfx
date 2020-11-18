@@ -18,7 +18,8 @@ public:
 	    std::size_t                          index,
 	    std::vector<vk::WriteDescriptorSet>& descriptorWrites);
 
-	[[nodiscard]] const vk::DescriptorSet& GetDescriptorSet(std::size_t index) {
+	[[nodiscard]] const vk::DescriptorSet& GetDescriptorSet(
+	    std::size_t index = 0) {
 		return *mDescriptorSets[index];
 	}
 

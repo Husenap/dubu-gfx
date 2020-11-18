@@ -27,10 +27,16 @@ public:
 		return mImage->GetImageView();
 	}
 
+	[[nodiscard]] const vk::DescriptorImageInfo& GetImageInfo() const {
+		return mImageInfo;
+	}
+
 	[[nodiscard]] operator bool() const { return mImage.operator bool(); }
 
 private:
 	glm::ivec2 mDimensions;
 
-	std::unique_ptr<dubu::gfx::Image> mImage;
+	std::unique_ptr<dubu::gfx::Image>   mImage;
+	std::unique_ptr<dubu::gfx::Sampler> mSampler;
+	vk::DescriptorImageInfo             mImageInfo;
 };
