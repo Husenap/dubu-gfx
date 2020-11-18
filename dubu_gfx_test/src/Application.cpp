@@ -225,7 +225,6 @@ void Application::RecreateSwapchain() {
 
 	mCommandBuffer.reset();
 	mDescriptorSet.reset();
-	mUniformBuffers.clear();
 	mFramebuffer.reset();
 	mGraphicsPipeline.reset();
 	mPipelineLayout.reset();
@@ -238,7 +237,6 @@ void Application::RecreateSwapchain() {
 	CreateRenderPass();
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
-	CreateUniformBuffers();
 	CreateDescriptorSets();
 	CreateCommandBuffer();
 
@@ -297,10 +295,10 @@ void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 	UniformBufferObject ubo{
 	    .model =
 	        glm::rotate(glm::mat4(1.f),
-	                    -(std::cosf(time) * 0.5f + 0.5f) * glm::radians(90.f),
+	                    -(-std::cosf(0.f) * 0.5f + 0.5f) * glm::radians(90.f),
 	                    glm::vec3(0.f, 1.f, 0.f)),
-	    .view = glm::lookAt(glm::vec3(0.f, 1.f + std::sinf(time * 0.25f), 8.f),
-	                        glm::vec3(0.f, 0.f, 0.f),
+	    .view = glm::lookAt(glm::vec3(0.f, 1.5f + std::sinf(time * 0.25f), 4.f),
+	                        glm::vec3(0.f, 0.f, -10.f),
 	                        glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
 	        glm::radians(45.f),
@@ -701,7 +699,7 @@ void Application::CreateModel() {
 	    .physicalDevice = mDevice->GetPhysicalDevice(),
 	    .queueFamilies  = mDevice->GetQueueFamilies(),
 	    .graphicsQueue  = mDevice->GetGraphicsQueue(),
-	    .filepath       = "assets/models/backpack/backpack.glb",
+	    .filepath       = "assets/models/sponza.glb",
 	    .descriptorPool = mDescriptorPool->GetDescriptorPool(),
 	    .descriptorSetLayout =
 	        mDescriptorSetLayouts.material->GetDescriptorSetLayout(),

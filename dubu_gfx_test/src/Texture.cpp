@@ -58,7 +58,6 @@ void Texture::LoadFromMemory(const CreateInfo& createInfo,
 	    static_cast<uint32_t>(
 	        std::floor(std::log2(std::max(mDimensions.x, mDimensions.y)))) +
 	    1;
-	mipLevels = 1;
 
 	dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
 	    .device           = createInfo.device,

@@ -70,7 +70,8 @@ Mesh::Mesh(const CreateInfo& createInfo) {
 		                      createInfo.graphicsQueue);
 	}
 
-	mIndexCount = static_cast<uint32_t>(createInfo.indices.size());
+	mIndexCount    = static_cast<uint32_t>(createInfo.indices.size());
+	mMaterialIndex = createInfo.materialIndex;
 }
 
 Model::Model(const CreateInfo& createInfo) {
@@ -159,8 +160,11 @@ Model::Model(const CreateInfo& createInfo) {
 			meshInfo.vertices[vertexIndex] = Vertex{
 			    .position = AiToGlm(mesh->mVertices[vertexIndex]),
 			    .normal   = AiToGlm(mesh->mNormals[vertexIndex]),
-			    .texCoord = AiToGlm(mesh->mTextureCoords[0][vertexIndex]),
 			};
+			if (mesh->HasTextureCoords(0)) {
+				meshInfo.vertices[vertexIndex].texCoord =
+				    AiToGlm(mesh->mTextureCoords[0][vertexIndex]);
+			}
 		}
 		for (unsigned int faceIndex = 0; faceIndex < mesh->mNumFaces;
 		     ++faceIndex) {

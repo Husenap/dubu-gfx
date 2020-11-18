@@ -10,8 +10,41 @@ layout(location = 1) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
+const mat4 DitherPattern = mat4(0.0,
+                                12.,
+                                3.0,
+                                15.,
+                                8.0,
+                                4.0,
+                                11.,
+                                7.0,
+                                2.0,
+                                14.,
+                                1.0,
+                                13.,
+                                10.,
+                                6.0,
+                                9.0,
+                                5.0);
+
 void main() {
-	vec3 color = texture(colorMap, fragTexCoord).rgb;
+	vec4 colorSample = texture(colorMap, fragTexCoord).rgba;
+
+	if (colorSample.a < 0.5) {
+		discard;
+	}
+
+	vec3 color = colorSample.rgb;
+
+	float diffuse =
+	    dot(fragNormal, normalize(vec3(1.0, 1.0, -1.0))) * 0.5 + 0.5;
+
+	color *= diffuse;
+
+	float ditherValue =
+	    DitherPattern[int(gl_FragCoord.y) % 4][int(gl_FragCoord.x) % 4] / 16.0;
+
+	color += (1.0 / 255.0) * ditherValue;
 
 	color    = pow(color, vec3(1.0 / 2.2));
 	outColor = vec4(color, 1.0);

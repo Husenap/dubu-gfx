@@ -67,9 +67,9 @@ private:
 	std::unique_ptr<dubu::gfx::Framebuffer>         mFramebuffer      = {};
 	std::unique_ptr<dubu::gfx::CommandPool>         mCommandPool      = {};
 	std::unique_ptr<dubu::gfx::Image>               mDepthImage       = {};
-	std::unique_ptr<Model>                          mModel            = {};
 	std::vector<std::unique_ptr<dubu::gfx::Buffer>> mUniformBuffers   = {};
 	std::unique_ptr<dubu::gfx::DescriptorPool>      mDescriptorPool   = {};
+	std::unique_ptr<Model>                          mModel            = {};
 	std::unique_ptr<dubu::gfx::DescriptorSet>       mDescriptorSet    = {};
 	std::unique_ptr<dubu::gfx::CommandBuffer>       mCommandBuffer    = {};
 	std::vector<vk::UniqueSemaphore> mRenderFinishedSemaphores        = {};
