@@ -11,23 +11,12 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
 constexpr uint32_t WIDTH                = 1600;
 constexpr uint32_t HEIGHT               = 900;
 constexpr int      MAX_FRAMES_IN_FLIGHT = 2;
-
-const std::vector<Vertex> VERTICES = {
-    {{-1.0f, 0.0f, -1.0f}, {0.988f, 0.812f, 0.651f}, {0.f, 0.f}},
-    {{+1.0f, 0.0f, -1.0f}, {0.996f, 0.592f, 0.643f}, {1.f, 0.f}},
-    {{+1.0f, 0.0f, +1.0f}, {1.000f, 0.373f, 0.635f}, {1.f, 1.f}},
-    {{-1.0f, 0.0f, +1.0f}, {0.996f, 0.592f, 0.643f}, {0.f, 1.f}},
-
-    {{-1.0f, -1.0f, -1.0f}, {0.988f, 0.812f, 0.651f}, {0.f, 0.f}},
-    {{+1.0f, -1.0f, -1.0f}, {0.996f, 0.592f, 0.643f}, {1.f, 0.f}},
-    {{+1.0f, -1.0f, +1.0f}, {1.000f, 0.373f, 0.635f}, {1.f, 1.f}},
-    {{-1.0f, -1.0f, +1.0f}, {0.996f, 0.592f, 0.643f}, {0.f, 1.f}},
-};
-const std::vector<uint16_t> INDICES = {0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7};
 
 dubu::gfx::blob ReadFile(std::filesystem::path filepath) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
@@ -116,17 +105,16 @@ void Application::InitFramework() {
 	CreateSwapchain();
 	CreateDepthResources();
 	CreateRenderPass();
-	CreateDescriptorSetLayout();
+	CreateDescriptorSetLayouts();
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
 	CreateCommandPool();
-	CreateTextureImage();
-	CreateVertexBuffer();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
 	CreateCommandBuffer();
 	CreateSyncObjects();
+	CreateModel();
 }
 
 static void CheckVkResult(VkResult err) {
@@ -237,8 +225,6 @@ void Application::RecreateSwapchain() {
 
 	mCommandBuffer.reset();
 	mDescriptorSet.reset();
-	mDescriptorPool.reset();
-	mUniformBuffers.clear();
 	mFramebuffer.reset();
 	mGraphicsPipeline.reset();
 	mPipelineLayout.reset();
@@ -251,8 +237,6 @@ void Application::RecreateSwapchain() {
 	CreateRenderPass();
 	CreateGraphicsPipeline();
 	CreateFramebuffer();
-	CreateUniformBuffers();
-	CreateDescriptorPool();
 	CreateDescriptorSets();
 	CreateCommandBuffer();
 
@@ -260,79 +244,66 @@ void Application::RecreateSwapchain() {
 }
 
 void Application::RecordCommands(uint32_t imageIndex) {
-	mCommandBuffer->RecordCommands(
-	    static_cast<std::size_t>(imageIndex),
-	    {
-	        dubu::gfx::DrawingCommands::BeginRenderPass{
-	            .renderPass   = mRenderPass->GetRenderPass(),
-	            .framebuffers = mFramebuffer->GetFramebuffers(),
-	            .renderArea   = {.offset = {0, 0},
-                               .extent = mSwapchain->GetExtent()},
-	            .clearValues =
-	                {
-	                    vk::ClearColorValue(
-	                        std::array<float, 4>{0.f, 0.f, 0.f, 1.f}),
-	                    vk::ClearDepthStencilValue{.depth = 1.f},
-	                },
-	        },
+	std::vector<dubu::gfx::DrawingCommand> drawingCommands;
 
-	        dubu::gfx::DrawingCommands::BindPipeline{
-	            .pipeline  = mGraphicsPipeline->GetPipeline(),
-	            .bindPoint = vk::PipelineBindPoint::eGraphics,
+	drawingCommands.push_back(dubu::gfx::DrawingCommands::BeginRenderPass{
+	    .renderPass   = mRenderPass->GetRenderPass(),
+	    .framebuffers = mFramebuffer->GetFramebuffers(),
+	    .renderArea   = {.offset = {0, 0}, .extent = mSwapchain->GetExtent()},
+	    .clearValues =
+	        {
+	            vk::ClearColorValue(std::array<float, 4>{0.f, 0.f, 0.f, 1.f}),
+	            vk::ClearDepthStencilValue{.depth = 1.f},
 	        },
+	});
+	drawingCommands.push_back(dubu::gfx::DrawingCommands::BindPipeline{
+	    .pipeline  = mGraphicsPipeline->GetPipeline(),
+	    .bindPoint = vk::PipelineBindPoint::eGraphics,
+	});
+	drawingCommands.push_back(dubu::gfx::DrawingCommands::SetViewport{
+	    .viewports = mViewportState->GetViewports(),
+	});
+	drawingCommands.push_back(dubu::gfx::DrawingCommands::SetViewport{
+	    .viewports = mViewportState->GetViewports(),
+	});
 
-	        dubu::gfx::DrawingCommands::SetViewport{
-	            .viewports = mViewportState->GetViewports(),
-	        },
+	drawingCommands.push_back(dubu::gfx::DrawingCommands::BindDescriptorSets{
+	    .bindPoint      = vk::PipelineBindPoint::eGraphics,
+	    .pipelineLayout = *mPipelineLayout,
+	    .descriptorSets = {mDescriptorSet->GetDescriptorSet(
+	        static_cast<std::size_t>(imageIndex))},
+	});
 
-	        dubu::gfx::DrawingCommands::BindVertexBuffers{
-	            .buffers = {mVertexBuffer->GetBuffer()},
-	            .offsets = {0},
-	        },
-	        dubu::gfx::DrawingCommands::BindIndexBuffer{
-	            .buffer    = mIndexBuffer->GetBuffer(),
-	            .offset    = 0,
-	            .indexType = vk::IndexType::eUint16,
-	        },
-	        dubu::gfx::DrawingCommands::BindDescriptorSets{
-	            .bindPoint      = vk::PipelineBindPoint::eGraphics,
-	            .pipelineLayout = *mPipelineLayout,
-	            .descriptorSets = {mDescriptorSet->GetDescriptorSet(
-	                static_cast<std::size_t>(imageIndex))},
-	        },
+	mModel->RecordCommands(*mPipelineLayout, drawingCommands);
 
-	        dubu::gfx::DrawingCommands::DrawIndexed{
-	            .indexCount    = static_cast<uint32_t>(INDICES.size()),
-	            .instanceCount = 1,
+	drawingCommands.push_back(dubu::gfx::DrawingCommands::Custom{
+	    .customFunction =
+	        [](const vk::CommandBuffer& commandBuffer, std::size_t) {
+		        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
+		                                        commandBuffer);
 	        },
+	});
+	drawingCommands.push_back(dubu::gfx::DrawingCommands::EndRenderPass{});
 
-	        dubu::gfx::DrawingCommands::Custom{
-	            .customFunction =
-	                [](const vk::CommandBuffer& commandBuffer, std::size_t) {
-		                ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
-		                                                commandBuffer);
-	                }},
-
-	        dubu::gfx::DrawingCommands::EndRenderPass{},
-	    });
+	mCommandBuffer->RecordCommands(static_cast<std::size_t>(imageIndex),
+	                               drawingCommands);
 }
 
 void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 	auto time = static_cast<float>(glfwGetTime());
+	time = 0.f;
 
 	UniformBufferObject ubo{
-	    .model      = glm::rotate(glm::mat4(1.f),
-                             time * glm::radians(90.f),
-                             glm::vec3(0.f, 1.f, 0.f)),
-	    .view       = glm::lookAt(glm::vec3(0.f, 1.1f + std::cos(time), 2.f),
-                            glm::vec3(0.f, -0.5f, 0.f),
-                            glm::vec3(0.f, 1.f, 0.f)),
+	    .model = glm::mat4(1.f),
+	    .view = glm::lookAt(glm::vec3(2.f, 0.f, 2.f),
+	                        glm::vec3(0.f, 0.f, 0.f),
+	                        glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
-	        glm::radians(60.f),
+	        glm::radians(45.f),
 	        static_cast<float>(mSwapchain->GetExtent().width) /
 	            static_cast<float>(mSwapchain->GetExtent().height),
 	        0.1f,
-	        10.f),
+	        100.f),
 	};
 
 	ubo.projection[1][1] *= -1.f;
@@ -500,7 +471,8 @@ void Application::CreateRenderPass() {
 	                 .stencilLoadOp  = vk::AttachmentLoadOp::eDontCare,
 	                 .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
 	                 .initialLayout  = vk::ImageLayout::eUndefined,
-	                 .finalLayout    = vk::ImageLayout::eDepthStencilAttachmentOptimal,
+	                 .finalLayout =
+	                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
 	                 .referenceLayout =
 	                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
 	             }},
@@ -512,27 +484,47 @@ void Application::CreateRenderPass() {
 	    });
 }
 
-void Application::CreateDescriptorSetLayout() {
-	mDescriptorSetLayout = std::make_unique<dubu::gfx::DescriptorSetLayout>(
-	    dubu::gfx::DescriptorSetLayout::CreateInfo{
-	        .device = mDevice->GetDevice(),
-	        .bindings =
-	            {
+void Application::CreateDescriptorSetLayouts() {
+	mDescriptorSetLayouts.scene =
+	    std::make_unique<dubu::gfx::DescriptorSetLayout>(
+	        dubu::gfx::DescriptorSetLayout::CreateInfo{
+	            .device   = mDevice->GetDevice(),
+	            .bindings = {{
+	                .binding         = 0,
+	                .descriptorType  = vk::DescriptorType::eUniformBuffer,
+	                .descriptorCount = 1,
+	                .stageFlags      = vk::ShaderStageFlagBits::eVertex,
+	            }},
+	        });
+	mDescriptorSetLayouts.material =
+	    std::make_unique<dubu::gfx::DescriptorSetLayout>(
+	        dubu::gfx::DescriptorSetLayout::CreateInfo{
+	            .device = mDevice->GetDevice(),
+	            .bindings =
 	                {
-	                    .binding         = 0,
-	                    .descriptorType  = vk::DescriptorType::eUniformBuffer,
-	                    .descriptorCount = 1,
-	                    .stageFlags      = vk::ShaderStageFlagBits::eVertex,
+	                    {
+	                        .binding = 0,
+	                        .descriptorType =
+	                            vk::DescriptorType::eCombinedImageSampler,
+	                        .descriptorCount = 1,
+	                        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+	                    },
+	                    {
+	                        .binding = 1,
+	                        .descriptorType =
+	                            vk::DescriptorType::eCombinedImageSampler,
+	                        .descriptorCount = 1,
+	                        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+	                    },
+	                    {
+	                        .binding = 2,
+	                        .descriptorType =
+	                            vk::DescriptorType::eCombinedImageSampler,
+	                        .descriptorCount = 1,
+	                        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+	                    },
 	                },
-	                {
-	                    .binding = 1,
-	                    .descriptorType =
-	                        vk::DescriptorType::eCombinedImageSampler,
-	                    .descriptorCount = 1,
-	                    .stageFlags      = vk::ShaderStageFlagBits::eFragment,
-	                },
-	            },
-	    });
+	        });
 }
 
 void Application::CreateGraphicsPipeline() {
@@ -582,7 +574,7 @@ void Application::CreateGraphicsPipeline() {
 	    .depthClampEnable        = VK_FALSE,
 	    .rasterizerDiscardEnable = VK_FALSE,
 	    .polygonMode             = vk::PolygonMode::eFill,
-	    .cullMode                = vk::CullModeFlagBits::eBack,
+	    .cullMode                = vk::CullModeFlagBits::eNone,
 	    .frontFace               = vk::FrontFace::eClockwise,
 	    .depthBiasEnable         = VK_FALSE,
 	    .lineWidth               = 1.f,
@@ -617,10 +609,15 @@ void Application::CreateGraphicsPipeline() {
 	dubu::gfx::DynamicState dynamicState(
 	    {vk::DynamicState::eViewport, vk::DynamicState::eLineWidth});
 
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
+	    mDescriptorSetLayouts.scene->GetDescriptorSetLayout(),
+	    mDescriptorSetLayouts.material->GetDescriptorSetLayout(),
+	};
 	mPipelineLayout = mDevice->GetDevice().createPipelineLayoutUnique(
 	    vk::PipelineLayoutCreateInfo{
-	        .setLayoutCount = 1,
-	        .pSetLayouts    = &mDescriptorSetLayout->GetDescriptorSetLayout(),
+	        .setLayoutCount =
+	            static_cast<uint32_t>(descriptorSetLayouts.size()),
+	        .pSetLayouts = descriptorSetLayouts.data(),
 	    });
 
 	mGraphicsPipeline = std::make_unique<dubu::gfx::GraphicsPipeline>(
@@ -687,154 +684,24 @@ void Application::CreateDepthResources() {
 	        .aspectMask       = vk::ImageAspectFlagBits::eDepth,
 	    });
 
-	mDepthImage->TransitionImageLayout(vk::ImageLayout::eUndefined,
-	                                   vk::ImageLayout::eDepthStencilAttachmentOptimal,
-	                                   mDevice->GetQueueFamilies(),
-	                                   mDevice->GetGraphicsQueue());
-}
-
-void Application::CreateTextureImage() {
-	const std::filesystem::path imagePath = "assets/textures/dubu.png";
-
-	glm::ivec2 textureSize;
-	int        textureChannels;
-	auto       blob = ReadFile(imagePath);
-	stbi_uc*   pixels =
-	    stbi_load_from_memory(reinterpret_cast<stbi_uc*>(blob.data()),
-	                          static_cast<int>(blob.size()),
-	                          &textureSize.x,
-	                          &textureSize.y,
-	                          &textureChannels,
-	                          STBI_rgb_alpha);
-	uint32_t imageSize =
-	    static_cast<uint32_t>(textureSize.x * textureSize.y * 4);
-
-	if (!pixels) {
-		DUBU_LOG_FATAL("Failed to load texure image: {}", imagePath);
-	}
-
-	dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
-	    .device           = mDevice->GetDevice(),
-	    .physicalDevice   = mDevice->GetPhysicalDevice(),
-	    .size             = imageSize,
-	    .usage            = vk::BufferUsageFlagBits::eTransferSrc,
-	    .sharingMode      = vk::SharingMode::eExclusive,
-	    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
-	                        vk::MemoryPropertyFlagBits::eHostCoherent,
-	});
-
-	stagingBuffer.SetData(pixels, static_cast<std::size_t>(imageSize));
-
-	stbi_image_free(pixels);
-
-	mTextureImage =
-	    std::make_unique<dubu::gfx::Image>(dubu::gfx::Image::CreateInfo{
-	        .device         = mDevice->GetDevice(),
-	        .physicalDevice = mDevice->GetPhysicalDevice(),
-	        .imageInfo =
-	            {
-	                .imageType = vk::ImageType::e2D,
-	                .format    = vk::Format::eR8G8B8A8Srgb,
-	                .extent =
-	                    {
-	                        .width  = static_cast<uint32_t>(textureSize.x),
-	                        .height = static_cast<uint32_t>(textureSize.y),
-	                        .depth  = 1,
-	                    },
-	                .mipLevels   = 1,
-	                .arrayLayers = 1,
-	                .samples     = vk::SampleCountFlagBits::e1,
-	                .tiling      = vk::ImageTiling::eOptimal,
-	                .usage       = vk::ImageUsageFlagBits::eTransferDst |
-	                         vk::ImageUsageFlagBits::eSampled,
-	                .sharingMode   = vk::SharingMode::eExclusive,
-	                .initialLayout = vk::ImageLayout::eUndefined,
-	            },
-	        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
-	        .aspectMask       = vk::ImageAspectFlagBits::eColor,
-	    });
-
-	mTextureImage->TransitionImageLayout(vk::ImageLayout::eUndefined,
-	                                     vk::ImageLayout::eTransferDstOptimal,
-	                                     mDevice->GetQueueFamilies(),
-	                                     mDevice->GetGraphicsQueue());
-	mTextureImage->SetData(stagingBuffer.GetBuffer(),
-	                       mDevice->GetQueueFamilies(),
-	                       mDevice->GetGraphicsQueue(),
-	                       static_cast<uint32_t>(textureSize.x),
-	                       static_cast<uint32_t>(textureSize.y));
-	mTextureImage->TransitionImageLayout(
-	    vk::ImageLayout::eTransferDstOptimal,
-	    vk::ImageLayout::eShaderReadOnlyOptimal,
+	mDepthImage->TransitionImageLayout(
+	    vk::ImageLayout::eUndefined,
+	    vk::ImageLayout::eDepthStencilAttachmentOptimal,
 	    mDevice->GetQueueFamilies(),
 	    mDevice->GetGraphicsQueue());
-
-	mTextureSampler =
-	    std::make_unique<dubu::gfx::Sampler>(dubu::gfx::Sampler::CreateInfo{
-	        .device      = mDevice->GetDevice(),
-	        .filter      = vk::Filter::eLinear,
-	        .addressMode = vk::SamplerAddressMode::eRepeat,
-	    });
 }
 
-void Application::CreateVertexBuffer() {
-	{
-		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
-		    .device         = mDevice->GetDevice(),
-		    .physicalDevice = mDevice->GetPhysicalDevice(),
-		    .size  = static_cast<uint32_t>(VERTICES.size() * sizeof(Vertex)),
-		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
-		    .sharingMode      = vk::SharingMode::eExclusive,
-		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
-		                        vk::MemoryPropertyFlagBits::eHostCoherent,
-		});
-
-		stagingBuffer.SetData(VERTICES);
-
-		mVertexBuffer =
-		    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
-		        .device         = mDevice->GetDevice(),
-		        .physicalDevice = mDevice->GetPhysicalDevice(),
-		        .size = static_cast<uint32_t>(VERTICES.size() * sizeof(Vertex)),
-		        .usage = vk::BufferUsageFlagBits::eVertexBuffer |
-		                 vk::BufferUsageFlagBits::eTransferDst,
-		        .sharingMode      = vk::SharingMode::eExclusive,
-		        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
-		    });
-
-		mVertexBuffer->SetData(stagingBuffer.GetBuffer(),
-		                       mDevice->GetQueueFamilies(),
-		                       mDevice->GetGraphicsQueue());
-	}
-	{
-		dubu::gfx::Buffer stagingBuffer(dubu::gfx::Buffer::CreateInfo{
-		    .device         = mDevice->GetDevice(),
-		    .physicalDevice = mDevice->GetPhysicalDevice(),
-		    .size  = static_cast<uint32_t>(INDICES.size() * sizeof(uint16_t)),
-		    .usage = vk::BufferUsageFlagBits::eTransferSrc,
-		    .sharingMode      = vk::SharingMode::eExclusive,
-		    .memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
-		                        vk::MemoryPropertyFlagBits::eHostCoherent,
-		});
-
-		stagingBuffer.SetData(INDICES);
-
-		mIndexBuffer =
-		    std::make_unique<dubu::gfx::Buffer>(dubu::gfx::Buffer::CreateInfo{
-		        .device         = mDevice->GetDevice(),
-		        .physicalDevice = mDevice->GetPhysicalDevice(),
-		        .size =
-		            static_cast<uint32_t>(INDICES.size() * sizeof(uint16_t)),
-		        .usage = vk::BufferUsageFlagBits::eIndexBuffer |
-		                 vk::BufferUsageFlagBits::eTransferDst,
-		        .sharingMode      = vk::SharingMode::eExclusive,
-		        .memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal,
-		    });
-
-		mIndexBuffer->SetData(stagingBuffer.GetBuffer(),
-		                      mDevice->GetQueueFamilies(),
-		                      mDevice->GetGraphicsQueue());
-	}
+void Application::CreateModel() {
+	mModel = std::make_unique<Model>(Model::CreateInfo{
+	    .device         = mDevice->GetDevice(),
+	    .physicalDevice = mDevice->GetPhysicalDevice(),
+	    .queueFamilies  = mDevice->GetQueueFamilies(),
+	    .graphicsQueue  = mDevice->GetGraphicsQueue(),
+	    .filepath       = "assets/models/cerberus.glb",
+	    .descriptorPool = mDescriptorPool->GetDescriptorPool(),
+	    .descriptorSetLayout =
+	        mDescriptorSetLayouts.material->GetDescriptorSetLayout(),
+	});
 }
 
 void Application::CreateUniformBuffers() {
@@ -858,16 +725,10 @@ void Application::CreateDescriptorPool() {
 	        .device = mDevice->GetDevice(),
 	        .poolSizes =
 	            {
-	                {
-	                    vk::DescriptorType::eUniformBuffer,
-	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
-	                },
-	                {
-	                    vk::DescriptorType::eCombinedImageSampler,
-	                    static_cast<uint32_t>(mSwapchain->GetImageCount()),
-	                },
+	                {vk::DescriptorType::eUniformBuffer, 100},
+	                {vk::DescriptorType::eCombinedImageSampler, 100},
 	            },
-	        .maxSets = static_cast<uint32_t>(mSwapchain->GetImageCount()),
+	        .maxSets = 2 * 100,
 	    });
 }
 
@@ -880,7 +741,7 @@ void Application::CreateDescriptorSets() {
 	            static_cast<uint32_t>(mSwapchain->GetImageCount()),
 	        .layouts = std::vector<vk::DescriptorSetLayout>(
 	            mSwapchain->GetImageCount(),
-	            mDescriptorSetLayout->GetDescriptorSetLayout()),
+	            mDescriptorSetLayouts.scene->GetDescriptorSetLayout()),
 	    });
 
 	for (std::size_t i = 0; i < mSwapchain->GetImageCount(); ++i) {
@@ -896,18 +757,6 @@ void Application::CreateDescriptorSets() {
 		    .descriptorCount = 1,
 		    .descriptorType  = vk::DescriptorType::eUniformBuffer,
 		    .pBufferInfo     = &bufferInfo});
-
-		vk::DescriptorImageInfo imageInfo{
-		    .sampler     = mTextureSampler->GetSampler(),
-		    .imageView   = mTextureImage->GetImageView(),
-		    .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-		};
-		descriptorWrites.push_back(vk::WriteDescriptorSet{
-		    .dstBinding      = 1,
-		    .dstArrayElement = 0,
-		    .descriptorCount = 1,
-		    .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
-		    .pImageInfo      = &imageInfo});
 
 		mDescriptorSet->UpdateDescriptorSets(i, descriptorWrites);
 	}

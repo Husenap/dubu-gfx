@@ -7,42 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-
-	static auto GetBindingDescription() {
-		return vk::VertexInputBindingDescription{
-		    .binding   = 0,
-		    .stride    = sizeof(Vertex),
-		    .inputRate = vk::VertexInputRate::eVertex,
-		};
-	}
-
-	static auto GetAttributeDescriptions() {
-		return std::array<vk::VertexInputAttributeDescription, 3>{
-		    vk::VertexInputAttributeDescription{
-		        .location = 0,
-		        .binding  = 0,
-		        .format   = vk::Format::eR32G32B32Sfloat,
-		        .offset   = offsetof(Vertex, pos),
-		    },
-		    vk::VertexInputAttributeDescription{
-		        .location = 1,
-		        .binding  = 0,
-		        .format   = vk::Format::eR32G32B32Sfloat,
-		        .offset   = offsetof(Vertex, color),
-		    },
-		    vk::VertexInputAttributeDescription{
-		        .location = 2,
-		        .binding  = 0,
-		        .format   = vk::Format::eR32G32Sfloat,
-		        .offset   = offsetof(Vertex, texCoord),
-		    },
-		};
-	}
-};
+#include "Model.h"
+#include "Texture.h"
 
 struct UniformBufferObject {
 	glm::mat4 model;
@@ -72,13 +38,12 @@ private:
 	void CreateDevice();
 	void CreateSwapchain();
 	void CreateRenderPass();
-	void CreateDescriptorSetLayout();
+	void CreateDescriptorSetLayouts();
 	void CreateGraphicsPipeline();
 	void CreateFramebuffer();
 	void CreateCommandPool();
 	void CreateDepthResources();
-	void CreateTextureImage();
-	void CreateVertexBuffer();
+	void CreateModel();
 	void CreateUniformBuffers();
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
@@ -87,32 +52,32 @@ private:
 
 	std::unique_ptr<dubu::window::GLFWWindow> mWindow;
 
-	std::unique_ptr<dubu::gfx::Instance>            mInstance            = {};
-	std::unique_ptr<dubu::gfx::Surface>             mSurface             = {};
-	std::unique_ptr<dubu::gfx::Device>              mDevice              = {};
-	std::unique_ptr<dubu::gfx::Swapchain>           mSwapchain           = {};
-	std::unique_ptr<dubu::gfx::RenderPass>          mRenderPass          = {};
-	std::unique_ptr<dubu::gfx::ViewportState>       mViewportState       = {};
-	std::unique_ptr<dubu::gfx::DescriptorSetLayout> mDescriptorSetLayout = {};
-	vk::UniquePipelineLayout                        mPipelineLayout      = {};
-	std::unique_ptr<dubu::gfx::GraphicsPipeline>    mGraphicsPipeline    = {};
-	std::unique_ptr<dubu::gfx::Framebuffer>         mFramebuffer         = {};
-	std::unique_ptr<dubu::gfx::CommandPool>         mCommandPool         = {};
-	std::unique_ptr<dubu::gfx::Image>               mDepthImage          = {};
-	std::unique_ptr<dubu::gfx::Image>               mTextureImage        = {};
-	std::unique_ptr<dubu::gfx::Sampler>             mTextureSampler      = {};
-	std::unique_ptr<dubu::gfx::Buffer>              mVertexBuffer        = {};
-	std::unique_ptr<dubu::gfx::Buffer>              mIndexBuffer         = {};
-	std::vector<std::unique_ptr<dubu::gfx::Buffer>> mUniformBuffers      = {};
-	std::unique_ptr<dubu::gfx::DescriptorPool>      mDescriptorPool      = {};
-	std::unique_ptr<dubu::gfx::DescriptorSet>       mDescriptorSet       = {};
-	std::unique_ptr<dubu::gfx::CommandBuffer>       mCommandBuffer       = {};
-	std::vector<vk::UniqueSemaphore> mRenderFinishedSemaphores           = {};
-	std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores           = {};
-	std::vector<vk::UniqueFence>     mInFlightFences                     = {};
-	std::vector<vk::Fence>           mImagesInFlight                     = {};
-	std::size_t                      mCurrentFrame                       = {};
-	bool                             mIsMinimized = false;
+	std::unique_ptr<dubu::gfx::Instance>      mInstance      = {};
+	std::unique_ptr<dubu::gfx::Surface>       mSurface       = {};
+	std::unique_ptr<dubu::gfx::Device>        mDevice        = {};
+	std::unique_ptr<dubu::gfx::Swapchain>     mSwapchain     = {};
+	std::unique_ptr<dubu::gfx::RenderPass>    mRenderPass    = {};
+	std::unique_ptr<dubu::gfx::ViewportState> mViewportState = {};
+	struct _DescriptorSetLayouts {
+		std::unique_ptr<dubu::gfx::DescriptorSetLayout> scene    = {};
+		std::unique_ptr<dubu::gfx::DescriptorSetLayout> material = {};
+	} mDescriptorSetLayouts;
+	vk::UniquePipelineLayout                        mPipelineLayout   = {};
+	std::unique_ptr<dubu::gfx::GraphicsPipeline>    mGraphicsPipeline = {};
+	std::unique_ptr<dubu::gfx::Framebuffer>         mFramebuffer      = {};
+	std::unique_ptr<dubu::gfx::CommandPool>         mCommandPool      = {};
+	std::unique_ptr<dubu::gfx::Image>               mDepthImage       = {};
+	std::vector<std::unique_ptr<dubu::gfx::Buffer>> mUniformBuffers   = {};
+	std::unique_ptr<dubu::gfx::DescriptorPool>      mDescriptorPool   = {};
+	std::unique_ptr<Model>                          mModel            = {};
+	std::unique_ptr<dubu::gfx::DescriptorSet>       mDescriptorSet    = {};
+	std::unique_ptr<dubu::gfx::CommandBuffer>       mCommandBuffer    = {};
+	std::vector<vk::UniqueSemaphore> mRenderFinishedSemaphores        = {};
+	std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores        = {};
+	std::vector<vk::UniqueFence>     mInFlightFences                  = {};
+	std::vector<vk::Fence>           mImagesInFlight                  = {};
+	std::size_t                      mCurrentFrame                    = {};
+	bool                             mIsMinimized                     = false;
 
 	std::unique_ptr<dubu::gfx::DescriptorPool> mImGuiDescriptorPool = {};
 	bool                                       mShowDemoWindow      = false;

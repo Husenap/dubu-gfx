@@ -3,6 +3,10 @@ set(target_name "dubu_gfx_test")
 set(src_files
     "src/Application.cpp"
     "src/Application.h"
+    "src/Model.cpp"
+    "src/Model.h"
+    "src/Texture.cpp"
+    "src/Texture.h"
     "src/main.cpp")
 
 add_executable(${target_name} ${src_files})
@@ -12,7 +16,8 @@ target_link_libraries(${target_name}
     dubu_gfx
     imgui
     glm
-    stb)
+    stb
+    assimp)
 
 set_target_properties(${target_name} PROPERTIES
     FOLDER ${${PROJECT_NAME}_FOLDER}/test
