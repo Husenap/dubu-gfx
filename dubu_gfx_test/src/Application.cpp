@@ -291,14 +291,12 @@ void Application::RecordCommands(uint32_t imageIndex) {
 
 void Application::UpdateUniformBuffer(uint32_t imageIndex) {
 	auto time = static_cast<float>(glfwGetTime());
+	time = 0.f;
 
 	UniformBufferObject ubo{
-	    .model =
-	        glm::rotate(glm::mat4(1.f),
-	                    -(-std::cosf(0.f) * 0.5f + 0.5f) * glm::radians(90.f),
-	                    glm::vec3(0.f, 1.f, 0.f)),
-	    .view = glm::lookAt(glm::vec3(0.f, 1.5f + std::sinf(time * 0.25f), 4.f),
-	                        glm::vec3(0.f, 0.f, -10.f),
+	    .model = glm::mat4(1.f),
+	    .view = glm::lookAt(glm::vec3(2.f, 0.f, 2.f),
+	                        glm::vec3(0.f, 0.f, 0.f),
 	                        glm::vec3(0.f, 1.f, 0.f)),
 	    .projection = glm::perspective(
 	        glm::radians(45.f),
@@ -699,7 +697,7 @@ void Application::CreateModel() {
 	    .physicalDevice = mDevice->GetPhysicalDevice(),
 	    .queueFamilies  = mDevice->GetQueueFamilies(),
 	    .graphicsQueue  = mDevice->GetGraphicsQueue(),
-	    .filepath       = "assets/models/sponza.glb",
+	    .filepath       = "assets/models/cerberus.glb",
 	    .descriptorPool = mDescriptorPool->GetDescriptorPool(),
 	    .descriptorSetLayout =
 	        mDescriptorSetLayouts.material->GetDescriptorSetLayout(),

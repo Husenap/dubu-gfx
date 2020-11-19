@@ -29,6 +29,7 @@ const mat4 DitherPattern = mat4(0.0,
 
 void main() {
 	vec4 colorSample = texture(colorMap, fragTexCoord).rgba;
+	vec3 ARM         = texture(physicalDescriptorMap, fragTexCoord).rgb;
 
 	if (colorSample.a < 0.5) {
 		discard;
@@ -40,6 +41,7 @@ void main() {
 	    dot(fragNormal, normalize(vec3(1.0, 1.0, -1.0))) * 0.5 + 0.5;
 
 	color *= diffuse;
+	color *= ARM.r;
 
 	float ditherValue =
 	    DitherPattern[int(gl_FragCoord.y) % 4][int(gl_FragCoord.x) % 4] / 16.0;
